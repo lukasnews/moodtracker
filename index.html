@@ -954,14 +954,27 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       </form>
       <p class="sync-status" id="sync-status" aria-live="polite"></p>
 
+      <div id="sync-devices" class="pw-change" hidden>
+        <h3>Dieses Gerät</h3>
+        <p class="muted small">Z. B. für einen Arbeitslaptop oder ein geliehenes Gerät: abmelden und auf Wunsch alle Daten von diesem Gerät entfernen.</p>
+        <button type="button" class="btn" id="sync-logout-btn">Dieses Gerät abmelden …</button>
+      </div>
+
       <div id="sync-pw-change" class="pw-change" hidden>
-        <h3>Sync-Passwort ändern</h3>
-        <p class="muted small">Die Daten auf dem Server werden mit dem neuen Passwort neu verschlüsselt. Danach auf den anderen Geräten das neue Passwort eintragen und „Speichern &amp; synchronisieren“ tippen.</p>
+        <h3>Passwort ändern / andere Geräte abmelden</h3>
+        <p class="muted small">Die Daten auf dem Server werden mit dem neuen Passwort neu verschlüsselt. Danach auf den anderen Geräten das neue Passwort eintragen.</p>
         <form id="sync-pw-form" novalidate autocomplete="off">
           <label class="field-label" for="sync-pw-new">Neues Sync-Passwort <span class="field-hint">(mind. 8 Zeichen)</span></label>
           <input id="sync-pw-new" class="input" type="password" maxlength="200" autocomplete="new-password" spellcheck="false">
           <label class="field-label" for="sync-pw-repeat">Neues Passwort wiederholen</label>
           <input id="sync-pw-repeat" class="input" type="password" maxlength="200" autocomplete="new-password" spellcheck="false">
+          <div class="chip-list" style="margin-top:.9rem">
+            <label class="option" for="sync-revoke">
+              <input type="checkbox" id="sync-revoke">
+              <span class="option-body"><span class="option-label">Alle anderen Geräte abmelden</span><span class="option-check" aria-hidden="true">✓</span></span>
+            </label>
+          </div>
+          <p class="muted small" style="margin:.4rem 0 0">Z. B. bei einem verlorenen Handy: Andere Geräte löschen beim nächsten Abgleich ihre lokalen Daten und müssen sich mit dem neuen Passwort neu verbinden.</p>
           <p class="field-error" id="sync-pw-error" role="alert" hidden></p>
           <div class="btn-row" style="margin-top:1rem">
             <button type="submit" class="btn" id="sync-pw-btn">Passwort ändern</button>
@@ -2375,6 +2388,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       case 'conflict': return 'Gleichzeitige Änderungen – bitte gleich noch einmal synchronisieren.';
       case 'network': return 'Sync-Server nicht erreichbar. Läuft der Pi? Internetverbindung prüfen.';
       case 'auth': return 'Das Paar-Passwort passt nicht (401). Wurde es auf einem anderen Gerät geändert? Dann hier das neue Passwort eintragen und „Speichern & synchronisieren“ tippen.';
+      case 'revoked': return 'Dieses Gerät wurde abgemeldet.';
+      case 'reused': return 'Dieses Passwort wurde früher schon verwendet und ist gesperrt. Bitte ein neues Passwort wählen.';
       case 'ratelimit': return 'Zu viele Fehlversuche. Bitte etwa 15 Minuten warten und dann erneut versuchen.';
       case 'server': return `Der Sync-Server meldet einen Fehler (HTTP ${status}).`;
       case 'nocrypto': return 'Dieser Browser unterstützt die nötige Verschlüsselung nicht (nur über https möglich).';
@@ -2474,6 +2489,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     }
     if (res.status === 401) throw new SyncError('auth', 401);
     if (res.status === 429) throw new SyncError('ratelimit', 429);
+    if (res.status === 410) throw new SyncError('revoked', 410);
     return res;
   }
 
@@ -2557,6 +2573,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     badge.textContent = !syncReady() ? 'aus' : state === 'error' ? 'Problem' : 'aktiv';
     badge.className = 'badge' + (!syncReady() ? '' : state === 'error' ? ' warn' : ' on');
     $('#sync-pw-change').hidden = !syncReady();
+    $('#sync-devices').hidden = !syncReady();
     if (typeof updateConnectHint === 'function') updateConnectHint();
     const footer = $('#footer-sync');
     if (!syncReady()) footer.textContent = 'läuft lokal in deinem Browser';
@@ -2623,6 +2640,10 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       throw new SyncError('conflict');
     } catch (err) {
       const error = err instanceof SyncError ? err : new SyncError('unknown');
+      // Gesperrt: nur löschen, wenn dieses Gerät mit dem Passwort schon synchronisiert war –
+      // sonst wurde einfach ein altes, gesperrtes Passwort eingetippt (= falsches Passwort).
+      if (error.code === 'revoked' && syncConfig.lastSync) { handleRevoked(); return { ok: false, error }; }
+      if (error.code === 'revoked') error.code = 'auth';
       const text = syncErrorText(error);
       setSyncStatus(text, 'error');
       if (manual) showInfo('Sync fehlgeschlagen', text);
@@ -2696,7 +2717,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       } catch (err) {
         syncConfig = previous;
         const error = err instanceof SyncError ? err : new SyncError('unknown');
-        if (error.code === 'auth' || error.code === 'passphrase') continue;
+        if (error.code === 'auth' || error.code === 'passphrase' || error.code === 'revoked') continue;
         showInfo('Verbinden fehlgeschlagen', syncErrorText(error));
         return;
       }
@@ -2732,10 +2753,16 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (newPass !== repeat) { showError('Die beiden Passwörter stimmen nicht überein.'); $('#sync-pw-repeat').focus(); return; }
     if (newPass === syncConfig.passphrase) { showError('Das neue Passwort ist dasselbe wie das bisherige.'); return; }
     showError('');
-    const ok = await confirmAction('Sync-Passwort ändern?',
-      ['Die gespeicherten Sync-Daten werden mit dem neuen Passwort neu verschlüsselt.',
-        'Auf den anderen Geräten klappt der Sync danach erst wieder, wenn dort das neue Passwort eingetragen ist. Bitte das neue Passwort gut merken.'],
-      'Passwort ändern');
+    const revokeOld = $('#sync-revoke').checked;
+    const ok = revokeOld
+      ? await confirmAction('Alle anderen Geräte abmelden?',
+        ['Das Passwort wird geändert. Alle anderen Geräte – auch das Handy deines Gegenübers – werden beim nächsten Abgleich abgemeldet und löschen dort ihre lokalen Daten.',
+          'Auf euren eigenen Geräten dann einfach mit dem neuen Passwort neu verbinden – alle Einträge kommen vom Server zurück. Ein Gerät, das nie wieder online geht, behält allerdings seine alte Kopie.'],
+        'Abmelden & Passwort ändern', { danger: true })
+      : await confirmAction('Sync-Passwort ändern?',
+        ['Die gespeicherten Sync-Daten werden mit dem neuen Passwort neu verschlüsselt.',
+          'Auf den anderen Geräten klappt der Sync danach erst wieder, wenn dort das neue Passwort eingetragen ist. Bitte das neue Passwort gut merken.'],
+        'Passwort ändern');
     if (!ok) return;
     if (syncRunning) { showError('Gerade läuft ein Abgleich – bitte gleich noch einmal versuchen.'); return; }
 
@@ -2762,8 +2789,12 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           // Anmelde-Token und Daten in einem Schritt austauschen
           const res = await serverFetch('/v1/rekey', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ version: remote.ref, newToken: await deriveAuthToken(newPass), data: envelope })
+            body: JSON.stringify({ version: remote.ref, newToken: await deriveAuthToken(newPass), data: envelope, revokeOld })
           });
+          if (res.status === 400) {
+            const info = await res.json().catch(() => ({}));
+            throw new SyncError(info.error === 'password_reused' ? 'reused' : 'server', 400);
+          }
           if (res.status !== 409 && !res.ok) throw new SyncError('server', res.status);
           write = { conflict: res.status === 409 };
         }
@@ -2784,8 +2815,12 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       $('#sync-pw-new').value = '';
       $('#sync-pw-repeat').value = '';
       setSyncStatus(describeLastSync(), 'ok');
-      showInfo('Passwort geändert', ['Die Daten sind jetzt mit dem neuen Passwort verschlüsselt.',
-        'Auf den anderen Geräten: ⚙️ → Sync → neues Passwort eintragen → „Speichern & synchronisieren“.']);
+      $('#sync-revoke').checked = false;
+      showInfo(revokeOld ? 'Andere Geräte abgemeldet' : 'Passwort geändert', revokeOld
+        ? ['Alle anderen Geräte werden beim nächsten Abgleich abgemeldet und löschen ihre lokalen Daten.',
+          'Auf euren eigenen Geräten: Startseite → „Mit Paar-Passwort verbinden“ → neues Passwort.']
+        : ['Die Daten sind jetzt mit dem neuen Passwort verschlüsselt.',
+          'Auf den anderen Geräten: ⚙️ → Sync → neues Passwort eintragen → „Speichern & synchronisieren“.']);
     } catch (err) {
       const error = err instanceof SyncError ? err : new SyncError('unknown');
       const text = error.code === 'passphrase'
@@ -3830,6 +3865,12 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       showInfo('Nicht gelöscht', 'Die Bestätigung stimmte nicht. Es wurde nichts gelöscht.');
       return;
     }
+    wipeThisDevice();
+    toast('Alle Daten wurden gelöscht.');
+  }
+
+  /** Entfernt alle Daten und Zugangsdaten von diesem Gerät (Server und andere Geräte bleiben unberührt). */
+  function wipeThisDevice() {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
       window.localStorage.removeItem(PUSH_KEY);
@@ -3837,17 +3878,74 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     } catch (e) { /* ignorieren */ }
     syncConfig = emptySyncConfig();
     clearTimeout(syncTimer);
+    keyCache.clear();
+    authTokenCache.clear();
     pushConfig = { token: '', topics: { A: '', B: '' } };
     appData = defaultData();
     activeProfile = null;
     sharedViewOpen = false;
     justSaved = false;
     expandedEntryId = null;
+    editingId = null;
     resetForm();
     renderNames();
     renderSettings();
     renderFormView();
-    toast('Alle Daten wurden gelöscht.');
+    setSyncStatus(describeLastSync(), '');
+    if (currentView !== 'settings') showView('form', { focus: false });
+  }
+
+  /** Server meldet: Gerät wurde gesperrt („Alle anderen Geräte abmelden“) → lokale Daten löschen. */
+  let revokedHandled = false;
+  function handleRevoked() {
+    if (revokedHandled) return;
+    revokedHandled = true;
+    wipeThisDevice();
+    showView('form', { focus: false });
+    showInfo('Dieses Gerät wurde abgemeldet',
+      ['Auf einem anderen Gerät wurden alle übrigen Geräte abgemeldet. Die Daten auf diesem Gerät wurden deshalb entfernt.',
+        'Gehört das Gerät euch? Dann einfach „Mit Paar-Passwort verbinden“ tippen und das neue Passwort eingeben – alle Einträge kommen zurück.'])
+      .then(() => { revokedHandled = false; });
+  }
+
+  /** „Dieses Gerät abmelden“: vorher ein letztes Mal abgleichen, dann trennen oder alles löschen. */
+  async function logoutThisDevice() {
+    const res = await openDialog({
+      title: 'Dieses Gerät abmelden?',
+      message: ['„Abmelden & Daten löschen“ entfernt alle Einträge, Einstellungen und Zugangsdaten von diesem Gerät. Auf dem Server und euren anderen Geräten bleibt alles erhalten.',
+        '„Nur Sync trennen“ behält die Einträge auf diesem Gerät, gleicht aber nicht mehr ab.'],
+      buttons: [
+        { label: 'Abbrechen', value: 'cancel', autofocus: true },
+        { label: 'Nur Sync trennen', value: 'disconnect' },
+        { label: 'Abmelden & Daten löschen', value: 'wipe', variant: 'danger' }
+      ]
+    });
+    if (!res.action) return;
+    // Letzte Änderungen noch hochladen
+    if (syncReady()) {
+      const result = await runSync({ manual: false });
+      if (!result.ok && result.error && result.error.code === 'revoked' && !syncReady()) return; // bereits abgemeldet & geleert
+      if (!result.ok) {
+        const goOn = await confirmAction('Letzter Abgleich fehlgeschlagen',
+          'Änderungen, die nur auf diesem Gerät liegen, wurden noch nicht übertragen und gehen beim Abmelden verloren. Trotzdem abmelden?',
+          'Trotzdem abmelden', { danger: true });
+        if (!goOn) return;
+      }
+    }
+    if (res.action === 'wipe') {
+      wipeThisDevice();
+      showView('form', { focus: false });
+      showInfo('Abgemeldet', 'Dieses Gerät ist abgemeldet und enthält keine Our-Mood-Daten mehr.');
+    } else {
+      try { window.localStorage.removeItem(SYNC_KEY); } catch (err) { /* ignorieren */ }
+      syncConfig = emptySyncConfig();
+      clearTimeout(syncTimer);
+      keyCache.clear();
+      authTokenCache.clear();
+      renderSyncSettings();
+      updateConnectHint();
+      toast('Sync getrennt – die Einträge bleiben auf diesem Gerät.');
+    }
   }
 
   /* ==========================================================
@@ -3915,6 +4013,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   });
   $('#sync-clear-btn').addEventListener('click', clearSyncSettings);
   $('#sync-pw-form').addEventListener('submit', changeSyncPassword);
+  $('#sync-logout-btn').addEventListener('click', logoutThisDevice);
   $('#quick-connect-btn').addEventListener('click', quickConnect);
   $('#push-test-btn').addEventListener('click', testPush);
   $('#push-clear-btn').addEventListener('click', clearPushConfig);
