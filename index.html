@@ -937,15 +937,11 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
 
     <div class="card settings-card">
       <h2>Selbstbefriedigung</h2>
-      <p class="muted">Blendet im Formular die optionale Frage „Habe ich mich heute selbst befriedigt?“ ein. Die Angabe ist wie alle anderen in der gemeinsamen Ansicht sichtbar.</p>
+      <p class="muted">Blendet im Formular die optionale Frage „Habe ich mich heute selbst befriedigt?“ ein – gleichberechtigt für euch beide. Die Angabe ist wie alle anderen in der gemeinsamen Ansicht sichtbar.</p>
       <div class="chip-list">
-        <label class="option" for="solo-setting-A">
-          <input type="checkbox" id="solo-setting-A" data-solo-profile="A">
-          <span class="option-body"><span class="option-label">Frage für <span data-name="A">Person A</span></span><span class="option-check" aria-hidden="true">✓</span></span>
-        </label>
-        <label class="option" for="solo-setting-B">
-          <input type="checkbox" id="solo-setting-B" data-solo-profile="B">
-          <span class="option-body"><span class="option-label">Frage für <span data-name="B">Person B</span></span><span class="option-check" aria-hidden="true">✓</span></span>
+        <label class="option" for="solo-setting">
+          <input type="checkbox" id="solo-setting">
+          <span class="option-body"><span class="option-label">Frage für beide anzeigen</span><span class="option-check" aria-hidden="true">✓</span></span>
         </label>
       </div>
     </div>
@@ -1230,7 +1226,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   function defaultData() {
     return {
       version: DATA_VERSION,
-      settings: { names: { ...DEFAULT_NAMES }, cycle: { A: false, B: false }, solo: { A: false, B: false } },
+      settings: { names: { ...DEFAULT_NAMES }, cycle: { A: false, B: false }, solo: false },
       entries: [],
       wishes: [],
       signals: { A: null, B: null }
@@ -1338,7 +1334,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     let wishesRaw = [];
     let signalsRaw = {};
     let cycleRaw = {};
-    let soloRaw = {};
+    let soloRaw = false;
     if (Array.isArray(raw)) {
       entriesRaw = raw;
     } else if (raw && typeof raw === 'object' && Array.isArray(raw.entries)) {
@@ -1347,7 +1343,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       if (Array.isArray(raw.wishes)) wishesRaw = raw.wishes;
       if (raw.signals && typeof raw.signals === 'object') signalsRaw = raw.signals;
       if (raw.settings && raw.settings.cycle && typeof raw.settings.cycle === 'object') cycleRaw = raw.settings.cycle;
-      if (raw.settings && raw.settings.solo && typeof raw.settings.solo === 'object') soloRaw = raw.settings.solo;
+      // Gilt für beide gleich. Ältere Daten (pro Person) → eingeschaltet, wenn es bei einer Person an war.
+      if (raw.settings && raw.settings.solo === true) soloRaw = true;
+      else if (raw.settings && raw.settings.solo && typeof raw.settings.solo === 'object') soloRaw = raw.settings.solo.A === true || raw.settings.solo.B === true;
     }
     if (!entriesRaw) return { ok: false, data: null, validCount: 0, invalidCount: 0 };
 
@@ -1368,7 +1366,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         settings: {
           names: normalizeNames(namesRaw),
           cycle: { A: cycleRaw.A === true, B: cycleRaw.B === true },
-          solo: { A: soloRaw.A === true, B: soloRaw.B === true }
+          solo: soloRaw
         },
         entries,
         wishes: wishesRaw.map(normalizeWish).filter(Boolean),
@@ -1691,7 +1689,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
 
   /** Frage zur Selbstbefriedigung nur zeigen, wenn sie fürs aktive Profil eingeschaltet ist (oder beim Bearbeiten vorhanden). */
   function updateSoloVisibility(forceShow = false) {
-    const show = forceShow || !!(activeProfile && appData.settings.solo[activeProfile]);
+    const show = forceShow || !!(activeProfile && appData.settings.solo);
     $('#solo-group').hidden = !show;
     if (!show) $$('input[name="solo"]', form).forEach(i => { i.checked = false; });
   }
@@ -3019,7 +3017,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#name-b').value = nameOf('B');
     $('#names-error').hidden = true;
     for (const p of PROFILES) $(`#cycle-setting-${p}`).checked = !!appData.settings.cycle[p];
-    for (const p of PROFILES) $(`#solo-setting-${p}`).checked = !!appData.settings.solo[p];
+    $('#solo-setting').checked = !!appData.settings.solo;
     renderPushSettings();
     const n = appData.entries.length;
     $('#storage-summary').textContent = storageAvailable
@@ -3129,7 +3127,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         settings: {
           names: result.hasNames ? result.data.settings.names : { ...appData.settings.names },
           cycle: result.hasNames ? result.data.settings.cycle : { ...appData.settings.cycle },
-          solo: result.hasNames ? result.data.settings.solo : { ...appData.settings.solo }
+          solo: result.hasNames ? result.data.settings.solo : appData.settings.solo
         },
         entries: result.data.entries,
         wishes: result.data.wishes,
@@ -3262,13 +3260,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (!editingId) updateCycleVisibility();
     toast(box.checked ? `Zyklus-Frage für ${nameOf(p)} eingeschaltet.` : `Zyklus-Frage für ${nameOf(p)} ausgeschaltet.`);
   }));
-  $$('[data-solo-profile]').forEach(box => box.addEventListener('change', () => {
-    const p = box.dataset.soloProfile;
-    appData.settings.solo[p] = box.checked;
-    if (!persist()) { appData.settings.solo[p] = !box.checked; box.checked = !box.checked; showInfo('Speichern nicht möglich', 'Die Einstellung konnte nicht gespeichert werden.'); return; }
+  $('#solo-setting').addEventListener('change', event => {
+    const box = event.target;
+    appData.settings.solo = box.checked;
+    if (!persist()) { appData.settings.solo = !box.checked; box.checked = !box.checked; showInfo('Speichern nicht möglich', 'Die Einstellung konnte nicht gespeichert werden.'); return; }
     if (!editingId) updateSoloVisibility();
-    toast(box.checked ? `Frage für ${nameOf(p)} eingeschaltet.` : `Frage für ${nameOf(p)} ausgeschaltet.`);
-  }));
+    toast(box.checked ? 'Frage für beide eingeschaltet.' : 'Frage für beide ausgeschaltet.');
+  });
   $('#export-btn').addEventListener('click', exportData);
   $('#import-input').addEventListener('change', handleImportFile);
   $('#delete-all-btn').addEventListener('click', deleteAllData);
