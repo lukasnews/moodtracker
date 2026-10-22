@@ -273,13 +273,14 @@ main { padding: 1.25rem 0 4rem; }
 .field-error::before { content: "• "; }
 
 /* Fortschritt */
-.progress {
-  position: sticky; top: 66px; z-index: 10; padding: .9rem 1.1rem; margin-bottom: 1rem;
+#mood-form .progress {
+  position: sticky; top: 66px; z-index: 10; padding: .4rem .7rem .45rem; margin-bottom: .75rem;
+  display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .5rem; border-radius: 16px;
 }
-.progress-track { height: 8px; border-radius: 999px; background: var(--sand); overflow: hidden; }
+.progress-count { font-size: .8rem; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 2.2em; text-align: right; }
+.progress-track { flex-basis: 100%; height: 3px; border-radius: 999px; background: var(--sand); overflow: hidden; margin-top: .25rem; }
 .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--sage), var(--sage-strong)); border-radius: 999px; transition: width .4s ease; }
-.progress-text { font-size: .88rem; color: var(--text-muted); margin: .5rem 0 .55rem; }
-.steps { display: flex; gap: 4px; list-style: none; padding: 0; margin: 0; }
+.steps { display: flex; gap: 4px; list-style: none; padding: 0; margin: 0; flex: 1; min-width: 0; }
 .steps li { flex: 1 1 0; min-width: 0; }
 /* Schnell-Eintrag: ausführliche Teile ausblenden */
 #mood-form.quick [data-full-only] { display: none !important; }
@@ -345,18 +346,18 @@ details.chart-table summary { cursor: pointer; font-size: .9rem; color: var(--sa
 details.chart-table ul { margin: 0; padding-left: 1.2rem; font-size: .92rem; }
 .step-link {
   display: flex; flex-direction: column; align-items: center; gap: .15rem; text-decoration: none;
-  color: var(--text-muted); font-size: .76rem; padding: .2rem 0; border-radius: 10px; min-height: 44px;
+  color: var(--text-muted); font-size: .76rem; padding: .1rem 0; border-radius: 10px; min-height: 34px; justify-content: center;
 }
 .step-dot {
-  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .8rem;
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .8rem;
   border: 1.5px solid var(--line); background: var(--bg); transition: all .25s;
 }
 .step-link.done .step-dot { background: var(--sage-strong); border-color: var(--sage-strong); color: var(--card); }
 .step-link.required-open .step-dot { border-color: var(--rose); }
-@media (max-width: 480px) { .step-label { display: none; } .step-link { min-height: 36px; } }
+.step-label { display: none; }
 
 /* Abschnitte */
-.form-section { scroll-margin-top: 190px; }
+.form-section { scroll-margin-top: 130px; }
 .section-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; flex-wrap: wrap; }
 .section-tag {
   width: 28px; height: 28px; flex: none; border-radius: 10px; display: grid; place-items: center;
@@ -676,8 +677,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         </div>
 
         <div class="card progress" aria-label="Fortschritt im Formular">
-          <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
-          <p class="progress-text" id="progress-text">0 von 4 Abschnitten ausgefüllt</p>
+          <p class="visually-hidden" id="progress-text">0 von 4 Abschnitten ausgefüllt</p>
           <ol class="steps">
             <li><a class="step-link" href="#section-a" data-step="a"><span class="step-dot">A</span><span class="step-label">Stimmung</span><span class="visually-hidden step-state"></span></a></li>
             <li data-full-only><a class="step-link" href="#section-b" data-step="b"><span class="step-dot">B</span><span class="step-label">Einflüsse</span><span class="visually-hidden step-state"></span></a></li>
@@ -686,6 +686,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
             <li data-full-only><a class="step-link" href="#section-d" data-step="d"><span class="step-dot">E</span><span class="step-label">Reflexion</span><span class="visually-hidden step-state"></span></a></li>
             <li><a class="step-link" href="#section-e" data-step="e"><span class="step-dot" id="save-step-letter">F</span><span class="step-label">Speichern</span><span class="visually-hidden step-state"></span></a></li>
           </ol>
+          <span class="progress-count" id="progress-count" aria-hidden="true">0/5</span>
+          <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
         </div>
 
         <!-- Abschnitt A -->
@@ -1849,6 +1851,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     const names = { a: 'Stimmung', l: 'Lust', c: 'Intimität' };
     const count = sections.filter(k => done[k]).length;
     $('#progress-fill').style.width = (count / sections.length * 100) + '%';
+    $('#progress-count').textContent = `${count}/${sections.length}`;
 
     const missing = required.filter(k => !done[k]).map(k => names[k]);
     $('#progress-text').textContent = `${count} von ${sections.length} Abschnitten ausgefüllt · ` +
