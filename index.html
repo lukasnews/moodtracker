@@ -31,6 +31,9 @@
   --rose-soft: #f6e6e2;
   --sand: #e9dfd0;
   --focus: #4f6a4c;
+  --sel-bg: #dbe7d6;
+  --sel-ring: #4f6a4c;
+  --sel-text: #2f4a2c;
   --shadow: 0 1px 2px rgba(58, 50, 45, .05), 0 6px 24px rgba(58, 50, 45, .06);
   --radius: 20px;
   --radius-sm: 14px;
@@ -54,6 +57,9 @@
     --rose-soft: #47302c;
     --sand: #3a342f;
     --focus: #b9d1b5;
+    --sel-bg: #46603f;
+    --sel-ring: #cfe6ca;
+    --sel-text: #ffffff;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
     color-scheme: dark;
   }
@@ -128,9 +134,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 
 /* Lust-Signal */
-.signal-card { padding: 1rem 1.25rem; }
-.signal-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
-.signal-row > div { flex: 1 1 180px; }
+.signal-card { padding: .8rem 1rem; }
+.signal-row { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.signal-row > div { flex: 1 1 auto; min-width: 0; }
+.signal-row .btn { flex: none; }
+#own-signal-text { font-size: .8rem; line-height: 1.35; }
+.profile-bar { padding: .8rem 1rem; }
 .signal-card.active { border-color: var(--rose); background: var(--rose-soft); }
 .partner-signal {
   background: var(--rose-soft); border: 1px solid var(--rose); border-radius: var(--radius-sm);
@@ -163,7 +172,8 @@ main { padding: 1.25rem 0 4rem; }
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 1.35rem; margin-bottom: 1rem; box-shadow: var(--shadow);
 }
-@media (min-width: 600px) { .card { padding: 1.75rem; } }
+@media (min-width: 600px) { .card { padding: 1.5rem; } }
+@media (max-width: 599px) { #mood-form .card { padding: 1.05rem; margin-bottom: .75rem; } }
 
 /* Buttons */
 .btn {
@@ -229,7 +239,7 @@ main { padding: 1.25rem 0 4rem; }
    Formular
    ============================================================ */
 .date-card label { font-weight: 600; display: block; margin-bottom: .15rem; }
-.date-display { font-family: var(--font-display); font-size: 1.35rem; margin-bottom: .75rem; }
+.date-display { font-family: var(--font-display); font-size: 1.2rem; margin-bottom: .5rem; }
 .input, .textarea, .select {
   width: 100%; min-height: 48px; padding: .7rem .9rem; border-radius: var(--radius-sm);
   border: 1.5px solid var(--line); background: var(--bg); transition: border-color .2s;
@@ -257,14 +267,16 @@ main { padding: 1.25rem 0 4rem; }
 
 /* Lust-Skala 1–5 */
 .scale-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .45rem; }
-.scale-grid .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .2rem; min-height: 84px; padding: .6rem .25rem; }
+.scale-grid { gap: .35rem; }
+.scale-grid .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .1rem; min-height: 68px; padding: .45rem .15rem; }
 .scale-grid .option-emoji { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; }
 .scale-grid .option-label { font-size: .8rem; line-height: 1.2; }
 .scale-grid .option-check { display: none; }
 
 /* Tageszeit */
 .tod-list { grid-template-columns: repeat(4, 1fr); }
-.tod-list .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .15rem; min-height: 64px; padding: .45rem .2rem; font-size: .88rem; font-weight: 600; }
+.tod-list { gap: .35rem; }
+.tod-list .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .1rem; min-height: 56px; padding: .35rem .2rem; font-size: .82rem; font-weight: 600; }
 .tod-list .option-emoji { font-size: 1.2rem; }
 .tod-list .option-check { display: none; }
 
@@ -320,38 +332,62 @@ details.chart-table ul { margin: 0; padding-left: 1.2rem; font-size: .92rem; }
 }
 .step-link.done .step-dot { background: var(--sage-strong); border-color: var(--sage-strong); color: var(--card); }
 .step-link.required-open .step-dot { border-color: var(--rose); }
-@media (max-width: 380px) { .step-label { display: none; } }
+@media (max-width: 480px) { .step-label { display: none; } .step-link { min-height: 36px; } }
 
 /* Abschnitte */
 .form-section { scroll-margin-top: 190px; }
-.section-head { display: flex; align-items: center; gap: .7rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.section-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; flex-wrap: wrap; }
 .section-tag {
-  width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center;
+  width: 28px; height: 28px; flex: none; border-radius: 10px; display: grid; place-items: center;
   background: var(--sand); font-weight: 700; font-size: .95rem;
 }
-.section-head h2 { font-size: 1.3rem; flex: 1; min-width: 12ch; }
+.section-head h2 { font-size: 1.15rem; flex: 1; min-width: 10ch; }
+
+/* Zuklappbare optionale Abschnitte */
+details.collapsible > summary { list-style: none; cursor: pointer; margin-bottom: 0; min-height: 44px; }
+details.collapsible > summary::-webkit-details-marker, details.sub-collapsible > summary::-webkit-details-marker { display: none; }
+details.collapsible[open] > summary { margin-bottom: .8rem; }
+.collapse-icon { width: 22px; height: 22px; display: grid; place-items: center; color: var(--text-muted); transition: transform .2s; }
+.collapse-icon::before { content: "▾"; font-size: 1rem; }
+details[open] > summary .collapse-icon { transform: rotate(180deg); }
+details.sub-collapsible > summary {
+  list-style: none; cursor: pointer; font-weight: 600; color: var(--sage-strong); min-height: 44px;
+  display: flex; align-items: center; gap: .4rem;
+}
+details.sub-collapsible > summary::before { content: "＋"; font-weight: 700; }
+details.sub-collapsible[open] > summary::before { content: "－"; }
+details.sub-collapsible[open] > summary { margin-bottom: .6rem; }
+.collapsible-body { animation: reveal .3s ease; }
 .badge { font-size: .75rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; background: var(--bg-soft); color: var(--text-muted); border: 1px solid var(--line); }
 .badge.required { background: var(--sage-soft); color: var(--sage-strong); border-color: transparent; }
 
 fieldset.question-group { border: 0; margin: 0; padding: 0; min-width: 0; }
-.question { font-weight: 600; font-size: 1.05rem; padding: 0; margin-bottom: .75rem; }
+.question { font-weight: 600; font-size: 1rem; padding: 0; margin-bottom: .6rem; }
 .question-hint { color: var(--text-muted); font-size: .93rem; margin: -.35rem 0 .85rem; }
-.subquestion { margin-top: 1.4rem; padding-top: 1.25rem; border-top: 1px dashed var(--line); animation: reveal .35s ease; }
+.subquestion { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--line); animation: reveal .35s ease; }
 
 /* Auswahl-Karten (Radio/Checkbox optisch versteckt, aber fokussierbar) */
 .option { position: relative; display: block; cursor: pointer; }
 .option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .option-body {
-  display: flex; align-items: center; gap: .7rem; min-height: 54px; padding: .75rem 1rem;
+  display: flex; align-items: center; gap: .6rem; min-height: 48px; padding: .6rem .9rem;
   border-radius: var(--radius-sm); border: 1.5px solid var(--line); background: var(--bg);
   transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
 }
 .option:hover .option-body { border-color: var(--sage); }
 .option input:focus-visible + .option-body { outline: 3px solid var(--focus); outline-offset: 3px; }
 .option input:checked + .option-body {
-  border-color: var(--sage-strong); background: var(--sage-soft);
-  box-shadow: inset 0 0 0 1px var(--sage-strong);
+  border-color: var(--sel-ring); background: var(--sel-bg); color: var(--sel-text);
+  box-shadow: inset 0 0 0 1.5px var(--sel-ring);
 }
+/* Bei Emoji-/Skalen-Auswahl: Nicht gewählte Optionen dezent abblenden, Auswahl leicht hervorheben */
+.mood-grid:has(input:checked) .option input:not(:checked) + .option-body,
+.scale-grid:has(input:checked) .option input:not(:checked) + .option-body,
+.tod-list:has(input:checked) .option input:not(:checked) + .option-body { opacity: .5; }
+.mood-grid .option input:checked + .option-body,
+.scale-grid .option input:checked + .option-body { transform: translateY(-2px); box-shadow: inset 0 0 0 2px var(--sel-ring), 0 4px 14px rgba(0,0,0,.18); }
+.mood-grid .option input:checked + .option-body .option-emoji { transform: scale(1.12); }
+.mood-grid .option-emoji { transition: transform .2s; }
 .option:active .option-body { transform: scale(.985); }
 .option-emoji { font-size: 1.5rem; line-height: 1; }
 .option-check {
@@ -361,25 +397,33 @@ fieldset.question-group { border: 0; margin: 0; padding: 0; min-width: 0; }
 }
 .option input:checked + .option-body .option-check { background: var(--sage-strong); border-color: var(--sage-strong); color: var(--card); }
 
-.mood-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: .6rem; }
-.mood-grid .option-body { flex-direction: column; justify-content: center; text-align: center; min-height: 112px; gap: .4rem; font-weight: 600; }
-.mood-grid .option-emoji { font-size: 2.2rem; }
-.mood-grid .option-check { display: none; }
-@media (max-width: 400px) {
-  .mood-grid { grid-template-columns: repeat(2, 1fr); }
-  .mood-grid .option:last-child { grid-column: 1 / -1; }
+.mood-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4rem; }
+.mood-grid .option-body {
+  flex-direction: column; justify-content: center; text-align: center; min-height: 82px; gap: .3rem;
+  padding: .5rem .15rem; font-weight: 600; font-size: .78rem; line-height: 1.15;
 }
+.mood-grid .option-emoji { font-size: 1.9rem; }
+.mood-grid .option-check { display: none; }
+@media (min-width: 600px) { .mood-grid .option-body { min-height: 96px; font-size: .9rem; } .mood-grid .option-emoji { font-size: 2.2rem; } }
 
 .option-list { display: grid; gap: .55rem; }
 @media (min-width: 600px) { .option-list.two-col { grid-template-columns: 1fr 1fr; } }
 .option-list.inline { grid-template-columns: repeat(3, 1fr); }
 .option-list.inline.solo-list { grid-template-columns: repeat(2, 1fr); }
-.option-list.inline .option-body { justify-content: center; text-align: center; font-weight: 600; }
+.option-list.inline .option-body { justify-content: center; text-align: center; font-weight: 600; padding: .5rem .3rem; font-size: .92rem; line-height: 1.2; }
+.option-list.inline.inline-4 { grid-template-columns: repeat(4, 1fr); gap: .4rem; }
+.option-list.inline.inline-4 .option-body { font-size: .82rem; }
+.option-list { gap: .45rem; }
+.option-list.two-col { grid-template-columns: 1fr 1fr; }
+.option-list.two-col .option-body { font-size: .9rem; line-height: 1.2; }
+.option-list.two-col .option-check { display: none; }
 .option-list.inline .option-check { display: none; }
 
 .chip-list { display: flex; flex-wrap: wrap; gap: .5rem; }
-.chip-list .option-body { border-radius: 999px; min-height: 46px; padding: .55rem 1rem; font-size: .97rem; gap: .45rem; }
-.chip-list .option-check { margin-left: 0; width: 20px; height: 20px; border-radius: 6px; font-size: .75rem; }
+.chip-list { gap: .4rem; }
+.chip-list .option-body { border-radius: 999px; min-height: 40px; padding: .4rem .85rem; font-size: .9rem; gap: .35rem; }
+.chip-list .option-check { display: none; }
+.chip-list .option input:checked + .option-body .option-label::before { content: "✓ "; font-weight: 700; color: var(--sel-text); }
 
 /* Speichern */
 .save-card { text-align: center; }
@@ -577,9 +621,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         <div class="signal-row">
           <div>
             <strong id="own-signal-title">Lust-Signal</strong>
-            <p class="muted small" id="own-signal-text" style="margin:0">Zeig deinem Gegenüber unverbindlich, dass du heute Lust hättest.</p>
+            <p class="muted small" id="own-signal-text" style="margin:0">Unverbindlich zeigen, dass du heute Lust hättest.</p>
           </div>
-          <button type="button" class="btn btn-small" id="signal-btn">✨ Ich hätte heute Lust</button>
+          <button type="button" class="btn btn-small" id="signal-btn">✨ Lust</button>
         </div>
       </div>
 
@@ -601,7 +645,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <p class="field-label" id="mode-label">Art des Eintrags</p>
           <div class="segmented" role="group" aria-labelledby="mode-label">
             <button type="button" id="mode-full" aria-pressed="true">Ausführlich</button>
-            <button type="button" id="mode-quick" aria-pressed="false">Schnell: Lust heute?</button>
+            <button type="button" id="mode-quick" aria-pressed="false">Schnell</button>
           </div>
           <p class="muted small" id="mode-hint" style="margin:.5rem 0 0">Das ganze Formular für euren vereinbarten Tag.</p>
         </div>
@@ -634,20 +678,23 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         </section>
 
         <!-- Abschnitt B -->
-        <section class="card form-section" id="section-b" aria-labelledby="section-b-title" data-full-only>
-          <div class="section-head">
+        <details class="card form-section collapsible" id="section-b" data-full-only>
+          <summary class="section-head">
             <span class="section-tag" aria-hidden="true">B</span>
             <h2 id="section-b-title">Was beeinflusst meine Stimmung?</h2>
             <span class="badge">optional</span>
-          </div>
+            <span class="collapse-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="collapsible-body">
           <fieldset class="question-group">
             <legend class="question">Was beschäftigt mich heute?</legend>
             <p class="question-hint">Mehrfachauswahl möglich.</p>
             <div class="chip-list" id="factor-options"></div>
           </fieldset>
           <label class="field-label" for="factors-note">Möchtest du noch etwas ergänzen? <span class="field-hint">(optional)</span></label>
-          <textarea id="factors-note" class="textarea" maxlength="2000" rows="3"></textarea>
-        </section>
+          <textarea id="factors-note" class="textarea" maxlength="2000" rows="2"></textarea>
+          </div>
+        </details>
 
         <!-- Abschnitt C: Lust & Wünsche -->
         <section class="card form-section" id="section-l" aria-labelledby="section-l-title">
@@ -665,7 +712,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <div class="subquestion">
             <fieldset class="question-group">
               <legend class="question">Wie oft hätte ich gern Sex? <span class="field-hint">(optional)</span></legend>
-              <div class="option-list two-col" id="frequency-wish-options"></div>
+              <div class="option-list inline inline-4" id="frequency-wish-options"></div>
             </fieldset>
           </div>
 
@@ -683,22 +730,22 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
             </fieldset>
           </div>
 
-          <div class="subquestion" data-full-only>
+          <details class="subquestion sub-collapsible" id="more-wishes" data-full-only>
+            <summary>Mehr Wünsche angeben <span class="field-hint">(optional)</span></summary>
+            <div class="collapsible-body">
             <fieldset class="question-group">
-              <legend class="question">Was würde meine Lust fördern? <span class="field-hint">(optional)</span></legend>
+              <legend class="question">Was würde meine Lust fördern?</legend>
               <p class="question-hint">Mehrfachauswahl möglich.</p>
               <div class="chip-list" id="booster-options"></div>
             </fieldset>
             <label class="field-label" for="boost-note">Mein konkreter Wunsch <span class="field-hint">(optional)</span></label>
             <textarea id="boost-note" class="textarea" maxlength="2000" rows="2"></textarea>
-          </div>
-
-          <div class="subquestion" data-full-only>
-            <fieldset class="question-group">
-              <legend class="question">Wünsche ich mir mehr Initiative von meinem Gegenüber? <span class="field-hint">(optional)</span></legend>
+            <fieldset class="question-group" style="margin-top:1rem">
+              <legend class="question">Wünsche ich mir mehr Initiative von meinem Gegenüber?</legend>
               <div class="option-list inline" id="initiative-wish-options"></div>
             </fieldset>
-          </div>
+            </div>
+          </details>
         </section>
 
         <!-- Abschnitt D: Intimität -->
@@ -738,20 +785,23 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         </section>
 
         <!-- Abschnitt E: Reflexion -->
-        <section class="card form-section" id="section-d" aria-labelledby="section-d-title" data-full-only>
-          <div class="section-head">
+        <details class="card form-section collapsible" id="section-d" data-full-only>
+          <summary class="section-head">
             <span class="section-tag" aria-hidden="true">E</span>
             <h2 id="section-d-title">Freiwillige Reflexion</h2>
             <span class="badge">optional</span>
-          </div>
+            <span class="collapse-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="collapsible-body">
           <fieldset class="question-group" aria-describedby="pressure-hint">
             <legend class="question">Habe ich mich heute unter Druck gefühlt?</legend>
             <p class="question-hint" id="pressure-hint">Nur für deine eigene Wahrnehmung – es geht nicht um Schuld.</p>
             <div class="option-list inline" id="pressure-options"></div>
           </fieldset>
           <label class="field-label" for="wish-note">Was hätte mir heute gutgetan? <span class="field-hint">(optional)</span></label>
-          <textarea id="wish-note" class="textarea" maxlength="2000" rows="3"></textarea>
-        </section>
+          <textarea id="wish-note" class="textarea" maxlength="2000" rows="2"></textarea>
+          </div>
+        </details>
 
         <!-- Abschnitt E -->
         <section class="card form-section save-card" id="section-e" aria-labelledby="section-e-title">
@@ -1583,7 +1633,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#mode-full').setAttribute('aria-pressed', String(!quick));
     $('#mode-quick').setAttribute('aria-pressed', String(quick));
     $('#mode-hint').textContent = quick
-      ? 'Kurz festhalten, wie viel Lust du heute hast – an jedem beliebigen Tag.'
+      ? 'Nur Lust (und optional Stimmung) – für jeden beliebigen Tag.'
       : 'Das ganze Formular für euren vereinbarten Tag.';
     const moodBadge = $('#mood-badge');
     moodBadge.textContent = quick ? 'optional' : 'Pflicht';
@@ -1701,6 +1751,14 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#form-errors').replaceChildren();
   }
 
+  /** Optionale Bereiche zuklappen bzw. aufklappen, wenn darin etwas ausgefüllt ist. */
+  function syncCollapsibles(openIfFilled) {
+    for (const box of $$('details.collapsible, details.sub-collapsible', form)) {
+      const filled = $$('input:checked', box).length > 0 || $$('textarea', box).some(t => t.value.trim());
+      box.open = openIfFilled ? filled : false;
+    }
+  }
+
   /** Setzt das Formular komplett zurück (neuer, leerer Eintrag mit heutigem Datum). */
   function resetForm() {
     form.reset();
@@ -1711,6 +1769,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#edit-banner').hidden = true;
     updateCycleVisibility();
     updateSoloVisibility();
+    syncCollapsibles(false);
     applyMode('full');
     updateConditionalQuestions();
     clearErrors();
@@ -1748,6 +1807,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (entry.afterFeeling) check('afterFeeling', entry.afterFeeling);
     if (entry.pressure) check('pressure', entry.pressure);
     wishInput.value = entry.wish;
+    syncCollapsibles(true);
     clearErrors();
     updateDateDisplay();
     updateProgress();
@@ -1996,8 +2056,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#own-signal-title').textContent = own ? 'Dein Lust-Signal ist aktiv' : 'Lust-Signal';
     $('#own-signal-text').textContent = own
       ? `${nameOf(partner)} sieht es heute, wenn das eigene Profil geöffnet wird.` + (own.note ? ` Nachricht: „${own.note}“` : '')
-      : 'Zeig deinem Gegenüber unverbindlich, dass du heute Lust hättest.';
-    $('#signal-btn').textContent = own ? 'Signal zurücknehmen' : '✨ Ich hätte heute Lust';
+      : 'Unverbindlich zeigen, dass du heute Lust hättest.';
+    $('#signal-btn').textContent = own ? 'Zurücknehmen' : '✨ Lust';
+    $('#signal-btn').setAttribute('aria-label', own ? 'Lust-Signal zurücknehmen' : 'Lust-Signal senden: Ich hätte heute Lust');
   }
 
   /* ==========================================================
@@ -3158,6 +3219,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   $$('.step-link', form).forEach(link => link.addEventListener('click', event => {
     event.preventDefault();
     const target = $(link.getAttribute('href'));
+    if (target.tagName === 'DETAILS') target.open = true;
     target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     const focusable = target.querySelector('input, textarea, button');
     if (focusable) focusable.focus({ preventScroll: true });
