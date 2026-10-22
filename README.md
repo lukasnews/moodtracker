@@ -20,6 +20,9 @@ Zum lokalen Ausprobieren öffnest du `index.html` einfach per Doppelklick im Bro
 - **Lust & Wünsche:** Lust-Skala 1–5, gewünschte Häufigkeit, „Was würde meine Lust fördern?“, Wunsch nach mehr Initiative; bei Nähe oder Sex zusätzlich „Wer hat die Initiative ergriffen?“.
 - **Mehrere Einträge pro Tag** mit Tageszeit (morgens, mittags, abends, nachts) – z. B. morgens „nicht so gut“, abends „sehr gut“. Rückfrage nur bei gleicher Tageszeit.
 - **Kleiner Monatskalender** über der Eintragsliste: zeigt pro Tag die Stimmungs-Emojis; Antippen zeigt die Einträge dieses Tages.
+- **Lust-Signal:** „Ich hätte heute Lust“ (optional mit kurzer Nachricht). Die andere Person sieht es beim Öffnen ihres Profils; um Mitternacht verschwindet es.
+- **Wunschliste zu zweit:** Ideen für Dates, Neues und Orte – beide können ergänzen, abhaken und löschen.
+- **Zyklus (optional):** In den Einstellungen pro Person einschaltbar; Frage zur Zyklusphase im Formular und „Lust nach Zyklusphase“ in der Auswertung.
 - Profilbild zeigt den Anfangsbuchstaben des Namens (bei gleichem Anfangsbuchstaben zwei Buchstaben).
 - **Schnell-Eintrag „Lust heute?“** für beliebige Tage: Lust (Pflicht), Stimmung und Wunsch-Häufigkeit (optional).
 - Zusatzfragen erscheinen nur, wenn sie passen (Sex → Erleben; Nähe/Sex → Gefühl danach).
@@ -40,6 +43,7 @@ Zum lokalen Ausprobieren öffnest du `index.html` einfach per Doppelklick im Bro
    - Die Einträge liegen **nur in dem Browser auf dem Gerät**, auf dem sie gespeichert wurden. Ein anderes Handy, ein anderer Browser (z. B. Safari statt Chrome) oder ein privates Fenster sieht sie nicht.
    - Wenn ihr zwei Geräte nutzt, hat jedes Gerät seine eigenen Daten. Zum Übertragen exportiert ihr auf dem einen Gerät und importiert auf dem anderen (*Zusammenführen*).
    - Werden Browserdaten bzw. Websitedaten gelöscht, sind die Einträge weg. Erstellt deshalb regelmäßig ein Backup.
+   - Lust-Signal und Wunschliste sind nur für beide sichtbar, wenn ihr **dasselbe Gerät und denselben Browser** nutzt.
    - GitHub Pages schützt keine privaten Daten. Wer das entsperrte Gerät benutzen kann, kann die Einträge sehen. Die Backup-Datei ist unverschlüsselt.
 
 ## Eigene Domain: moods.chaoten.online

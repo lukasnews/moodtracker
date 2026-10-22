@@ -108,7 +108,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-bottom: 1px solid transparent;
 }
 .nav-list {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1.15fr auto; gap: 2px;
   list-style: none; margin: 0; padding: 4px;
   background: var(--bg-soft); border-radius: 999px; border: 1px solid var(--line);
 }
@@ -119,7 +119,38 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .nav-btn:hover { color: var(--text); }
 .nav-btn[aria-current="page"] { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
-@media (max-width: 420px) { .nav-btn { font-size: .8rem; } }
+.nav-short { display: none; }
+@media (max-width: 560px) {
+  .nav-btn { font-size: .78rem; padding: .4rem .2rem; }
+  .nav-long { display: none; }
+  .nav-short { display: inline; font-size: 1rem; }
+  .nav-btn[data-view="settings"] { padding: .4rem .7rem; }
+}
+
+/* Lust-Signal */
+.signal-card { padding: 1rem 1.25rem; }
+.signal-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.signal-row > div { flex: 1 1 180px; }
+.signal-card.active { border-color: var(--rose); background: var(--rose-soft); }
+.partner-signal {
+  background: var(--rose-soft); border: 1px solid var(--rose); border-radius: var(--radius-sm);
+  padding: .8rem 1rem; margin-bottom: .9rem; animation: reveal .4s ease;
+}
+.partner-signal strong { display: block; font-size: 1.05rem; }
+.partner-signal p { margin: .2rem 0 0; white-space: pre-wrap; word-break: break-word; }
+
+/* Wunschliste */
+.wish-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.wish-item { display: flex; align-items: flex-start; gap: .75rem; padding: .85rem 1rem; margin: 0; }
+.wish-item input[type="checkbox"] { width: 24px; height: 24px; margin: .1rem 0 0; accent-color: var(--sage-strong); flex: none; cursor: pointer; }
+.wish-main { flex: 1; min-width: 0; }
+.wish-text { display: block; font-weight: 600; word-break: break-word; cursor: pointer; }
+.wish-item.done .wish-text { text-decoration: line-through; color: var(--text-muted); font-weight: 400; }
+.wish-meta { display: block; font-size: .85rem; color: var(--text-muted); }
+.wish-delete { flex: none; min-height: 40px; min-width: 40px; border: 0; background: none; color: var(--text-muted); cursor: pointer; border-radius: 10px; font-size: 1.1rem; }
+.wish-delete:hover { color: var(--rose-strong); background: var(--rose-soft); }
+details.wish-done summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; color: var(--sage-strong); margin: .6rem 0; }
+.wish-heading { font-size: 1.1rem; margin: 1.2rem 0 .7rem; }
 
 main { padding: 1.25rem 0 4rem; }
 .view { animation: fadeIn .35s ease; }
@@ -495,8 +526,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     <ul class="nav-list">
       <li><button type="button" class="nav-btn" data-view="form" aria-current="page">Eintrag</button></li>
       <li><button type="button" class="nav-btn" data-view="history">Einträge</button></li>
+      <li><button type="button" class="nav-btn" data-view="wishes">Wünsche</button></li>
       <li><button type="button" class="nav-btn" data-view="stats">Auswertung</button></li>
-      <li><button type="button" class="nav-btn" data-view="settings">Einstellungen</button></li>
+      <li><button type="button" class="nav-btn" data-view="settings" aria-label="Einstellungen"><span class="nav-long">Einstellungen</span><span class="nav-short" aria-hidden="true">⚙️</span></button></li>
     </ul>
   </div>
 </nav>
@@ -536,6 +568,18 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           </div>
         </div>
         <button type="button" class="btn btn-small" id="switch-profile-btn">Profil wechseln</button>
+      </div>
+
+      <!-- Lust-Signal -->
+      <div class="card signal-card" id="signal-card">
+        <div id="partner-signal" class="partner-signal" role="status" hidden></div>
+        <div class="signal-row">
+          <div>
+            <strong id="own-signal-title">Lust-Signal</strong>
+            <p class="muted small" id="own-signal-text" style="margin:0">Zeig deinem Gegenüber unverbindlich, dass du heute Lust hättest.</p>
+          </div>
+          <button type="button" class="btn btn-small" id="signal-btn">✨ Ich hätte heute Lust</button>
+        </div>
       </div>
 
       <div id="edit-banner" class="notice notice-warm edit-banner" hidden>
@@ -621,6 +665,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
             <fieldset class="question-group">
               <legend class="question">Wie oft hätte ich gern Sex? <span class="field-hint">(optional)</span></legend>
               <div class="option-list two-col" id="frequency-wish-options"></div>
+            </fieldset>
+          </div>
+
+          <div class="subquestion" id="cycle-group" hidden>
+            <fieldset class="question-group">
+              <legend class="question">In welcher Zyklusphase bin ich? <span class="field-hint">(optional)</span></legend>
+              <div class="option-list two-col" id="cycle-options"></div>
             </fieldset>
           </div>
 
@@ -728,6 +779,25 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     <div id="history-content"></div>
   </section>
 
+  <!-- ======================= WUNSCHLISTE ======================= -->
+  <section id="view-wishes" class="view" aria-labelledby="wishes-title" hidden>
+    <h2 id="wishes-title" class="view-title" tabindex="-1">Unsere Wunschliste</h2>
+    <p class="view-intro">Ideen für Dates, Neues und Orte – ihr könnt beide etwas ergänzen und abhaken.</p>
+    <div class="card">
+      <form id="wish-form" novalidate>
+        <label class="field-label" for="wish-text" style="margin-top:0">Neue Idee</label>
+        <input id="wish-text" class="input" type="text" maxlength="200" autocomplete="off" placeholder="z. B. Massageabend, Wochenende am See …" aria-describedby="wish-error">
+        <fieldset class="question-group">
+          <legend class="field-label">Kategorie</legend>
+          <div class="chip-list" id="wish-category-options"></div>
+        </fieldset>
+        <p class="field-error" id="wish-error" role="alert" hidden></p>
+        <button type="submit" class="btn btn-primary" style="margin-top:1rem">Zur Wunschliste hinzufügen</button>
+      </form>
+    </div>
+    <div id="wishes-content"></div>
+  </section>
+
   <!-- ======================= AUSWERTUNG ======================= -->
   <section id="view-stats" class="view" aria-labelledby="stats-title" hidden>
     <h2 id="stats-title" class="view-title" tabindex="-1">Auswertung</h2>
@@ -775,6 +845,21 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <button type="submit" class="btn btn-primary">Namen speichern</button>
         </div>
       </form>
+    </div>
+
+    <div class="card settings-card">
+      <h2>Zyklus</h2>
+      <p class="muted">Blendet im Formular die optionale Frage zur Zyklusphase ein. In der Auswertung erscheint dann „Lust nach Zyklusphase“.</p>
+      <div class="chip-list">
+        <label class="option" for="cycle-setting-A">
+          <input type="checkbox" id="cycle-setting-A" data-cycle-profile="A">
+          <span class="option-body"><span class="option-label">Zyklus-Frage für <span data-name="A">Person A</span></span><span class="option-check" aria-hidden="true">✓</span></span>
+        </label>
+        <label class="option" for="cycle-setting-B">
+          <input type="checkbox" id="cycle-setting-B" data-cycle-profile="B">
+          <span class="option-body"><span class="option-label">Zyklus-Frage für <span data-name="B">Person B</span></span><span class="option-check" aria-hidden="true">✓</span></span>
+        </label>
+      </div>
     </div>
 
     <div class="card settings-card">
@@ -904,6 +989,24 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     { value: 'weniger', label: 'Lieber weniger' }
   ];
 
+  // Zyklusphase (optional, pro Profil in den Einstellungen einschaltbar)
+  const CYCLE = [
+    { value: 'periode', label: 'Periode' },
+    { value: 'nach_periode', label: 'Nach der Periode' },
+    { value: 'eisprung', label: 'Um den Eisprung' },
+    { value: 'vor_periode', label: 'Vor der Periode' },
+    { value: 'unsicher', label: 'Weiß nicht' }
+  ];
+  // Wunschliste
+  const WISH_CATEGORIES = [
+    { value: 'date', label: 'Date', emoji: '🍷' },
+    { value: 'neues', label: 'Neues ausprobieren', emoji: '✨' },
+    { value: 'ort', label: 'Ort', emoji: '📍' },
+    { value: 'sonstiges', label: 'Sonstiges', emoji: '💬' }
+  ];
+  const MAX_WISH_LENGTH = 200;
+  const MAX_SIGNAL_LENGTH = 140;
+
   const TIME_OF_DAY = [
     { value: 'morgens', label: 'Morgens', emoji: '🌅' },
     { value: 'mittags', label: 'Mittags', emoji: '☀️' },
@@ -1017,7 +1120,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
      3. Datenhaltung (localStorage) und Validierung
      ========================================================== */
   function defaultData() {
-    return { version: DATA_VERSION, settings: { names: { ...DEFAULT_NAMES } }, entries: [] };
+    return {
+      version: DATA_VERSION,
+      settings: { names: { ...DEFAULT_NAMES }, cycle: { A: false, B: false } },
+      entries: [],
+      wishes: [],
+      signals: { A: null, B: null }
+    };
   }
 
   /**
@@ -1057,6 +1166,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       timeOfDay: pick(TIME_OF_DAY, raw.timeOfDay),
       mood: pick(MOODS, raw.mood),
       desire,
+      cycle: pick(CYCLE, raw.cycle),
       frequencyWish: pick(FREQUENCY_WISH, raw.frequencyWish),
       factors: full ? pickMany(FACTORS, raw.factors) : [],
       factorsNote: full ? cleanText(raw.factorsNote) : '',
@@ -1085,6 +1195,30 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     return names;
   }
 
+  /** Prüft einen Wunschlisten-Eintrag. */
+  function normalizeWish(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    const text = cleanText(raw.text, MAX_WISH_LENGTH);
+    if (!text || !PROFILES.includes(raw.addedBy)) return null;
+    const validTime = v => typeof v === 'string' && v.length < 40 && !isNaN(new Date(v).getTime());
+    const nowIso = new Date().toISOString();
+    return {
+      id: typeof raw.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(raw.id) ? raw.id : createId(),
+      text,
+      category: optionOf(WISH_CATEGORIES, raw.category) ? raw.category : 'sonstiges',
+      addedBy: raw.addedBy,
+      done: raw.done === true,
+      createdAt: validTime(raw.createdAt) ? raw.createdAt : nowIso,
+      doneAt: raw.done === true && validTime(raw.doneAt) ? raw.doneAt : ''
+    };
+  }
+
+  /** Lust-Signal: gilt nur für den Tag, an dem es gesetzt wurde. */
+  function normalizeSignal(raw) {
+    if (!raw || typeof raw !== 'object' || !isValidIsoDate(raw.date)) return null;
+    return { date: raw.date, note: cleanText(raw.note, MAX_SIGNAL_LENGTH) };
+  }
+
   /**
    * Prüft ein komplettes Datenobjekt (aus localStorage oder Import).
    * Liefert { ok, data, validCount, invalidCount } – wirft niemals.
@@ -1092,11 +1226,17 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   function normalizeData(raw) {
     let entriesRaw = null;
     let namesRaw = null;
+    let wishesRaw = [];
+    let signalsRaw = {};
+    let cycleRaw = {};
     if (Array.isArray(raw)) {
       entriesRaw = raw;
     } else if (raw && typeof raw === 'object' && Array.isArray(raw.entries)) {
       entriesRaw = raw.entries;
       namesRaw = raw.settings && raw.settings.names;
+      if (Array.isArray(raw.wishes)) wishesRaw = raw.wishes;
+      if (raw.signals && typeof raw.signals === 'object') signalsRaw = raw.signals;
+      if (raw.settings && raw.settings.cycle && typeof raw.settings.cycle === 'object') cycleRaw = raw.settings.cycle;
     }
     if (!entriesRaw) return { ok: false, data: null, validCount: 0, invalidCount: 0 };
 
@@ -1112,7 +1252,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     }
     return {
       ok: true,
-      data: { version: DATA_VERSION, settings: { names: normalizeNames(namesRaw) }, entries },
+      data: {
+        version: DATA_VERSION,
+        settings: { names: normalizeNames(namesRaw), cycle: { A: cycleRaw.A === true, B: cycleRaw.B === true } },
+        entries,
+        wishes: wishesRaw.map(normalizeWish).filter(Boolean),
+        signals: { A: normalizeSignal(signalsRaw.A), B: normalizeSignal(signalsRaw.B) }
+      },
       validCount: entries.length,
       invalidCount,
       hasNames: !!namesRaw
@@ -1304,6 +1450,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   buildOptions($('#initiative-wish-options'), 'initiativeWish', INITIATIVE_WISH);
   buildOptions($('#initiator-options'), 'initiator', INITIATOR);
   buildOptions($('#tod-options'), 'timeOfDay', TIME_OF_DAY);
+  buildOptions($('#cycle-options'), 'cycle', CYCLE);
+  buildOptions($('#wish-category-options'), 'wishCategory', WISH_CATEGORIES);
 
   let entryMode = 'full'; // 'full' = ausführlich, 'quick' = Schnell-Eintrag
 
@@ -1326,6 +1474,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       timeOfDay: checkedValue('timeOfDay'),
       mood: checkedValue('mood'),
       desire: desire ? Number(desire) : null,
+      cycle: $('#cycle-group').hidden ? '' : checkedValue('cycle'),
       frequencyWish: checkedValue('frequencyWish'),
       factors: full ? checkedValues('factors') : [],
       factorsNote: full ? cleanText(factorsNoteInput.value) : '',
@@ -1342,7 +1491,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   }
 
   const contentKey = v => JSON.stringify([
-    v.type || 'full', v.date, v.timeOfDay || '', v.mood, v.desire == null ? null : v.desire, v.frequencyWish || '',
+    v.type || 'full', v.date, v.timeOfDay || '', v.mood, v.desire == null ? null : v.desire, v.cycle || '', v.frequencyWish || '',
     (v.factors || []).slice().sort(), v.factorsNote || '', (v.boosters || []).slice().sort(), v.boostNote || '',
     v.initiativeWish || '', v.intimacy || '', v.initiator || '', v.sexExperience || '', v.afterFeeling || '',
     v.pressure || '', v.wish || ''
@@ -1416,6 +1565,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (!showAfter) { uncheck('afterFeeling'); uncheck('initiator'); }
   }
 
+  /** Zyklus-Frage nur zeigen, wenn sie für das aktive Profil eingeschaltet ist (oder der bearbeitete Eintrag eine Angabe hat). */
+  function updateCycleVisibility(forceShow = false) {
+    const show = forceShow || !!(activeProfile && appData.settings.cycle[activeProfile]);
+    $('#cycle-group').hidden = !show;
+    if (!show) $$('input[name="cycle"]', form).forEach(i => { i.checked = false; });
+  }
+
   function updateDateDisplay() {
     dateInput.max = todayIso();
     const text = formatDateLong(dateInput.value);
@@ -1479,6 +1635,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     const todInput = form.querySelector(`input[name="timeOfDay"][value="${currentTimeOfDay()}"]`);
     if (todInput) todInput.checked = true;
     $('#edit-banner').hidden = true;
+    updateCycleVisibility();
     applyMode('full');
     updateConditionalQuestions();
     clearErrors();
@@ -1499,6 +1656,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (entry.timeOfDay) check('timeOfDay', entry.timeOfDay);
     if (entry.mood) check('mood', entry.mood);
     if (entry.desire) check('desire', String(entry.desire));
+    updateCycleVisibility(!!entry.cycle);
+    if (entry.cycle) check('cycle', entry.cycle);
     if (entry.frequencyWish) check('frequencyWish', entry.frequencyWish);
     entry.factors.forEach(f => check('factors', f));
     factorsNoteInput.value = entry.factorsNote;
@@ -1730,13 +1889,167 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#profile-picker').hidden = hasProfile;
     $('#saved-card').hidden = !(hasProfile && justSaved);
     $('#form-area').hidden = !(hasProfile && !justSaved);
-    if (hasProfile) renderNames();
+    if (hasProfile) { renderNames(); renderSignals(); }
     updateDirtyState();
+  }
+
+  /* ==========================================================
+     Lust-Signal (gilt nur für heute)
+     ========================================================== */
+  const otherProfile = p => (p === 'A' ? 'B' : 'A');
+  const activeSignal = p => {
+    const sig = appData.signals[p];
+    return sig && sig.date === todayIso() ? sig : null;
+  };
+
+  function renderSignals() {
+    if (!activeProfile) return;
+    const partner = otherProfile(activeProfile);
+    const partnerSig = activeSignal(partner);
+    const partnerBox = $('#partner-signal');
+    partnerBox.hidden = !partnerSig;
+    if (partnerSig) {
+      partnerBox.replaceChildren(
+        el('strong', { text: `✨ ${nameOf(partner)} hätte heute Lust` }),
+        partnerSig.note ? el('p', { text: `„${partnerSig.note}“` }) : null
+      );
+    }
+    const own = activeSignal(activeProfile);
+    $('#signal-card').classList.toggle('active', !!own);
+    $('#own-signal-title').textContent = own ? 'Dein Lust-Signal ist aktiv' : 'Lust-Signal';
+    $('#own-signal-text').textContent = own
+      ? `${nameOf(partner)} sieht es heute, wenn das eigene Profil geöffnet wird.` + (own.note ? ` Nachricht: „${own.note}“` : '')
+      : 'Zeig deinem Gegenüber unverbindlich, dass du heute Lust hättest.';
+    $('#signal-btn').textContent = own ? 'Signal zurücknehmen' : '✨ Ich hätte heute Lust';
+  }
+
+  async function toggleSignal() {
+    if (!activeProfile) return;
+    const profile = activeProfile;
+    const previous = appData.signals[profile];
+    if (activeSignal(profile)) {
+      appData.signals[profile] = null;
+    } else {
+      const res = await openDialog({
+        title: 'Lust-Signal senden',
+        message: [`${nameOf(otherProfile(profile))} sieht heute beim Öffnen des eigenen Profils, dass du Lust hättest. Unverbindlich – es ist eine Einladung, keine Erwartung. Um Mitternacht verschwindet das Signal.`],
+        input: { label: 'Kurze Nachricht (optional)' },
+        buttons: [
+          { label: 'Abbrechen', value: 'cancel' },
+          { label: 'Signal senden', value: 'send', variant: 'primary' }
+        ]
+      });
+      if (res.action !== 'send' || activeProfile !== profile) return;
+      appData.signals[profile] = { date: todayIso(), note: cleanText(res.input, MAX_SIGNAL_LENGTH) };
+    }
+    if (!persist()) {
+      appData.signals[profile] = previous;
+      showInfo('Speichern nicht möglich', 'Das Signal konnte nicht gespeichert werden.');
+      return;
+    }
+    renderSignals();
+    toast(appData.signals[profile] ? 'Lust-Signal gesendet ✨' : 'Signal zurückgenommen.');
+  }
+
+  /* ==========================================================
+     Wunschliste
+     ========================================================== */
+  function renderWishes() {
+    const content = $('#wishes-content');
+    if (!$('input[name="wishCategory"]:checked')) {
+      const first = $('input[name="wishCategory"][value="date"]');
+      if (first) first.checked = true;
+    }
+    const open = appData.wishes.filter(w => !w.done).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const done = appData.wishes.filter(w => w.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
+    const parts = [];
+    if (!appData.wishes.length) {
+      parts.push(el('div', { className: 'card empty-state' }, [
+        el('span', { className: 'big', 'aria-hidden': 'true', text: '🌿' }),
+        el('p', { text: 'Noch keine Ideen. Was würdet ihr gern mal zusammen machen?' })
+      ]));
+    } else {
+      parts.push(el('h3', { className: 'wish-heading', text: `Offen (${open.length})` }));
+      parts.push(open.length
+        ? el('ul', { className: 'wish-list' }, open.map(renderWishItem))
+        : el('p', { className: 'muted', text: 'Alles erledigt – Zeit für neue Ideen.' }));
+      if (done.length) {
+        parts.push(el('details', { className: 'wish-done' }, [
+          el('summary', { text: `Erledigt (${done.length})` }),
+          el('ul', { className: 'wish-list' }, done.map(renderWishItem))
+        ]));
+      }
+    }
+    content.replaceChildren(...parts);
+  }
+
+  function renderWishItem(wish) {
+    const cat = optionOf(WISH_CATEGORIES, wish.category);
+    const checkboxId = 'wish-' + wish.id;
+    const meta = `${cat.emoji} ${cat.label} · von ${nameOf(wish.addedBy)}` +
+      (wish.done && wish.doneAt ? ` · erledigt am ${new Date(wish.doneAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })}` : '');
+    return el('li', { className: 'card wish-item' + (wish.done ? ' done' : '') }, [
+      el('input', { type: 'checkbox', id: checkboxId, checked: wish.done, onchange: () => toggleWish(wish.id) }),
+      el('span', { className: 'wish-main' }, [
+        el('label', { className: 'wish-text', for: checkboxId, text: wish.text }),
+        el('span', { className: 'wish-meta', text: meta })
+      ]),
+      el('button', { type: 'button', className: 'wish-delete', 'aria-label': `„${wish.text}“ löschen`, text: '✕', onclick: () => deleteWish(wish.id) })
+    ]);
+  }
+
+  function addWish(event) {
+    event.preventDefault();
+    const input = $('#wish-text');
+    const errorNode = $('#wish-error');
+    const text = cleanText(input.value, MAX_WISH_LENGTH);
+    let message = '';
+    if (!activeProfile) message = 'Bitte wähle zuerst dein Profil (Tab „Eintrag“), damit klar ist, von wem die Idee kommt.';
+    else if (!text) message = 'Bitte schreib kurz deine Idee auf.';
+    if (message) { errorNode.textContent = message; errorNode.hidden = false; input.focus(); return; }
+    errorNode.hidden = true;
+    const checked = $('input[name="wishCategory"]:checked');
+    const wish = normalizeWish({ id: createId(), text, category: checked ? checked.value : 'sonstiges', addedBy: activeProfile, done: false, createdAt: new Date().toISOString() });
+    appData.wishes.push(wish);
+    if (!persist()) {
+      appData.wishes.pop();
+      showInfo('Speichern nicht möglich', 'Die Idee konnte nicht gespeichert werden.');
+      return;
+    }
+    input.value = '';
+    renderWishes();
+    toast('Zur Wunschliste hinzugefügt.');
+    input.focus();
+  }
+
+  function toggleWish(id) {
+    const wish = appData.wishes.find(w => w.id === id);
+    if (!wish) return;
+    const before = { done: wish.done, doneAt: wish.doneAt };
+    wish.done = !wish.done;
+    wish.doneAt = wish.done ? new Date().toISOString() : '';
+    if (!persist()) { Object.assign(wish, before); showInfo('Speichern nicht möglich', 'Die Änderung konnte nicht gespeichert werden.'); }
+    renderWishes();
+    const again = document.getElementById('wish-' + id);
+    if (again) again.focus();
+  }
+
+  async function deleteWish(id) {
+    const wish = appData.wishes.find(w => w.id === id);
+    if (!wish) return;
+    const ok = await confirmAction('Idee löschen?', `„${wish.text}“ wird von der Wunschliste entfernt.`, 'Löschen', { danger: true });
+    if (!ok) return;
+    const before = appData.wishes;
+    appData.wishes = appData.wishes.filter(w => w.id !== id);
+    if (!persist()) { appData.wishes = before; showInfo('Löschen nicht möglich', 'Die Änderung konnte nicht gespeichert werden.'); return; }
+    renderWishes();
+    toast('Idee gelöscht.');
+    $('#wishes-title').focus();
   }
 
   function showView(view, { focus = true } = {}) {
     currentView = view;
-    for (const name of ['form', 'history', 'stats', 'settings']) {
+    for (const name of ['form', 'history', 'wishes', 'stats', 'settings']) {
       $('#view-' + name).hidden = name !== view;
     }
     $$('.nav-btn').forEach(btn => {
@@ -1746,6 +2059,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (view === 'form') renderFormView();
     if (view === 'history') renderHistory();
     if (view === 'stats') renderStats();
+    if (view === 'wishes') renderWishes();
     if (view === 'settings') renderSettings();
     if (focus) {
       const heading = $(`#view-${view} h2[tabindex="-1"]`);
@@ -2041,6 +2355,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       ['Lust auf Sex', desireText(entry.desire) || 'keine Angabe'],
       ['Gewünschte Häufigkeit', labelOf(FREQUENCY_WISH, entry.frequencyWish) || 'keine Angabe']
     ];
+    if (entry.cycle) rows.push(['Zyklusphase', labelOf(CYCLE, entry.cycle)]);
     if (!quick) {
       rows.push(['Was würde meine Lust fördern', entry.boosters.length ? entry.boosters.map(b => labelOf(BOOSTERS, b)).join(', ') : '–']);
       rows.push(['Mein konkreter Wunsch', entry.boostNote || '–']);
@@ -2278,6 +2593,21 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     parts.push(el('h4', { className: 'stat-sub', text: 'Wie viel Lust wurde angegeben?' }));
     parts.push(barList(DESIRE.map(d => ({ label: `${d.value} – ${d.label}`, count: withDesire.filter(e => String(e.desire) === d.value).length })), withDesire.length));
 
+    const withCycle = withDesire.filter(e => e.cycle && e.cycle !== 'unsicher');
+    if (withCycle.length) {
+      parts.push(el('h4', { className: 'stat-sub', text: 'Lust nach Zyklusphase' }));
+      parts.push(el('p', { className: 'muted small', text: 'Durchschnittliche Lust je Phase – nur eine Beschreibung, keine Ursache.' }));
+      parts.push(el('ul', { className: 'bar-list' }, CYCLE.filter(c => c.value !== 'unsicher').map(phase => {
+        const list = withCycle.filter(e => e.cycle === phase.value);
+        const avgPhase = list.length ? list.reduce((sum, e) => sum + e.desire, 0) / list.length : 0;
+        return el('li', { className: 'bar-row' }, [
+          el('span', { className: 'bar-label', text: phase.label }),
+          el('span', { className: 'bar-value', text: list.length ? `Ø ${formatNumber(avgPhase)} / 5 · ${list.length}×` : 'keine Angaben' }),
+          el('span', { className: 'bar-track', 'aria-hidden': 'true' }, el('span', { className: 'bar-fill', style: `width:${avgPhase / 5 * 100}%;display:block` }))
+        ]);
+      })));
+    }
+
     const withFrequency = entries.filter(e => e.frequencyWish);
     parts.push(el('h4', { className: 'stat-sub', text: 'Wie oft wäre schön?' }));
     parts.push(withFrequency.length
@@ -2386,6 +2716,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#name-a').value = nameOf('A');
     $('#name-b').value = nameOf('B');
     $('#names-error').hidden = true;
+    for (const p of PROFILES) $(`#cycle-setting-${p}`).checked = !!appData.settings.cycle[p];
     const n = appData.entries.length;
     $('#storage-summary').textContent = storageAvailable
       ? `Aktuell gespeichert: ${n === 1 ? '1 Eintrag' : n + ' Einträge'}.`
@@ -2428,7 +2759,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       version: DATA_VERSION,
       exportedAt: new Date().toISOString(),
       settings: appData.settings,
-      entries: appData.entries
+      entries: appData.entries,
+      wishes: appData.wishes
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -2490,14 +2822,21 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       if (!sure) return;
       appData = {
         version: DATA_VERSION,
-        settings: { names: result.hasNames ? result.data.settings.names : { ...appData.settings.names } },
-        entries: result.data.entries
+        settings: {
+          names: result.hasNames ? result.data.settings.names : { ...appData.settings.names },
+          cycle: result.hasNames ? result.data.settings.cycle : { ...appData.settings.cycle }
+        },
+        entries: result.data.entries,
+        wishes: result.data.wishes,
+        signals: appData.signals // Signale sind tagesaktuell und werden nicht importiert
       };
     } else {
       const existingIds = new Set(appData.entries.map(e => e.id));
       const existingKeys = new Set(appData.entries.map(e => e.profile + '|' + contentKey(e)));
       const additions = result.data.entries.filter(e => !existingIds.has(e.id) && !existingKeys.has(e.profile + '|' + contentKey(e)));
-      appData = { ...appData, entries: appData.entries.concat(additions) };
+      const wishIds = new Set(appData.wishes.map(w => w.id));
+      const wishAdditions = result.data.wishes.filter(w => !wishIds.has(w.id));
+      appData = { ...appData, entries: appData.entries.concat(additions), wishes: appData.wishes.concat(wishAdditions) };
       result.added = additions.length;
     }
 
@@ -2604,6 +2943,15 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   });
 
   $('#names-form').addEventListener('submit', handleNamesSubmit);
+  $('#signal-btn').addEventListener('click', toggleSignal);
+  $('#wish-form').addEventListener('submit', addWish);
+  $$('[data-cycle-profile]').forEach(box => box.addEventListener('change', () => {
+    const p = box.dataset.cycleProfile;
+    appData.settings.cycle[p] = box.checked;
+    if (!persist()) { appData.settings.cycle[p] = !box.checked; box.checked = !box.checked; showInfo('Speichern nicht möglich', 'Die Einstellung konnte nicht gespeichert werden.'); return; }
+    if (!editingId) updateCycleVisibility();
+    toast(box.checked ? `Zyklus-Frage für ${nameOf(p)} eingeschaltet.` : `Zyklus-Frage für ${nameOf(p)} ausgeschaltet.`);
+  }));
   $('#export-btn').addEventListener('click', exportData);
   $('#import-input').addEventListener('change', handleImportFile);
   $('#delete-all-btn').addEventListener('click', deleteAllData);
