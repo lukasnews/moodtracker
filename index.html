@@ -1757,14 +1757,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   /* ==========================================================
      10. Filter (gemeinsam für Einträge und Auswertung)
      ========================================================== */
-  async function openSharedView() {
-    const ok = await confirmAction(
-      'Gemeinsame Ansicht öffnen?',
-      ['In der gemeinsamen Ansicht werden auch die Antworten der anderen Person angezeigt. Öffnet sie am besten nur, wenn ihr beide damit einverstanden seid.',
-        'Hinweis: Auf einem gemeinsam genutzten Gerät ist das keine echte Zugriffskontrolle – es ist eine Rücksichtsfunktion.'],
-      'Gemeinsame Ansicht öffnen'
-    );
-    if (!ok) return;
+  /** Öffnet die gemeinsame Ansicht direkt (ohne Rückfrage); ein Hinweis erscheint in der Ansicht selbst. */
+  function openSharedView() {
     sharedViewOpen = true;
     filters.person = 'all';
     rerenderCurrent();
