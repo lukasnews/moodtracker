@@ -6,8 +6,8 @@
 <!-- Privatsphäre: keine Suchmaschinen-Indexierung, keine Referrer-Weitergabe -->
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<!-- Sicherheitsrichtlinie: Die Seite darf keinerlei Netzwerkverbindungen aufbauen (connect-src 'none') -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<!-- Sicherheitsrichtlinie: Netzwerkverbindungen sind NUR zum eigenen ntfy-Server erlaubt (für das optionale Lust-Signal per Push) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://ntfy.chaoten.online; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="theme-color" content="#f6f1e9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1f1c1a" media="(prefers-color-scheme: dark)">
 <title>Our Mood</title>
@@ -31,6 +31,9 @@
   --rose-soft: #f6e6e2;
   --sand: #e9dfd0;
   --focus: #4f6a4c;
+  --sel-bg: #dbe7d6;
+  --sel-ring: #4f6a4c;
+  --sel-text: #2f4a2c;
   --shadow: 0 1px 2px rgba(58, 50, 45, .05), 0 6px 24px rgba(58, 50, 45, .06);
   --radius: 20px;
   --radius-sm: 14px;
@@ -54,6 +57,9 @@
     --rose-soft: #47302c;
     --sand: #3a342f;
     --focus: #b9d1b5;
+    --sel-bg: #46603f;
+    --sel-ring: #cfe6ca;
+    --sel-text: #ffffff;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
     color-scheme: dark;
   }
@@ -128,9 +134,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 
 /* Lust-Signal */
-.signal-card { padding: 1rem 1.25rem; }
-.signal-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
-.signal-row > div { flex: 1 1 180px; }
+.signal-card { padding: .8rem 1rem; }
+.signal-row { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.signal-row > div { flex: 1 1 auto; min-width: 0; }
+.signal-row .btn { flex: none; }
+#own-signal-text { font-size: .8rem; line-height: 1.35; }
+.profile-bar { padding: .8rem 1rem; }
 .signal-card.active { border-color: var(--rose); background: var(--rose-soft); }
 .partner-signal {
   background: var(--rose-soft); border: 1px solid var(--rose); border-radius: var(--radius-sm);
@@ -163,7 +172,8 @@ main { padding: 1.25rem 0 4rem; }
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 1.35rem; margin-bottom: 1rem; box-shadow: var(--shadow);
 }
-@media (min-width: 600px) { .card { padding: 1.75rem; } }
+@media (min-width: 600px) { .card { padding: 1.5rem; } }
+@media (max-width: 599px) { #mood-form .card { padding: 1.05rem; margin-bottom: .75rem; } }
 
 /* Buttons */
 .btn {
@@ -229,7 +239,7 @@ main { padding: 1.25rem 0 4rem; }
    Formular
    ============================================================ */
 .date-card label { font-weight: 600; display: block; margin-bottom: .15rem; }
-.date-display { font-family: var(--font-display); font-size: 1.35rem; margin-bottom: .75rem; }
+.date-display { font-family: var(--font-display); font-size: 1.2rem; margin-bottom: .5rem; }
 .input, .textarea, .select {
   width: 100%; min-height: 48px; padding: .7rem .9rem; border-radius: var(--radius-sm);
   border: 1.5px solid var(--line); background: var(--bg); transition: border-color .2s;
@@ -257,14 +267,16 @@ main { padding: 1.25rem 0 4rem; }
 
 /* Lust-Skala 1–5 */
 .scale-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .45rem; }
-.scale-grid .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .2rem; min-height: 84px; padding: .6rem .25rem; }
+.scale-grid { gap: .35rem; }
+.scale-grid .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .1rem; min-height: 68px; padding: .45rem .15rem; }
 .scale-grid .option-emoji { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; }
 .scale-grid .option-label { font-size: .8rem; line-height: 1.2; }
 .scale-grid .option-check { display: none; }
 
 /* Tageszeit */
 .tod-list { grid-template-columns: repeat(4, 1fr); }
-.tod-list .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .15rem; min-height: 64px; padding: .45rem .2rem; font-size: .88rem; font-weight: 600; }
+.tod-list { gap: .35rem; }
+.tod-list .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .1rem; min-height: 56px; padding: .35rem .2rem; font-size: .82rem; font-weight: 600; }
 .tod-list .option-emoji { font-size: 1.2rem; }
 .tod-list .option-check { display: none; }
 
@@ -320,38 +332,62 @@ details.chart-table ul { margin: 0; padding-left: 1.2rem; font-size: .92rem; }
 }
 .step-link.done .step-dot { background: var(--sage-strong); border-color: var(--sage-strong); color: var(--card); }
 .step-link.required-open .step-dot { border-color: var(--rose); }
-@media (max-width: 380px) { .step-label { display: none; } }
+@media (max-width: 480px) { .step-label { display: none; } .step-link { min-height: 36px; } }
 
 /* Abschnitte */
 .form-section { scroll-margin-top: 190px; }
-.section-head { display: flex; align-items: center; gap: .7rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.section-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; flex-wrap: wrap; }
 .section-tag {
-  width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center;
+  width: 28px; height: 28px; flex: none; border-radius: 10px; display: grid; place-items: center;
   background: var(--sand); font-weight: 700; font-size: .95rem;
 }
-.section-head h2 { font-size: 1.3rem; flex: 1; min-width: 12ch; }
+.section-head h2 { font-size: 1.15rem; flex: 1; min-width: 10ch; }
+
+/* Zuklappbare optionale Abschnitte */
+details.collapsible > summary { list-style: none; cursor: pointer; margin-bottom: 0; min-height: 44px; }
+details.collapsible > summary::-webkit-details-marker, details.sub-collapsible > summary::-webkit-details-marker { display: none; }
+details.collapsible[open] > summary { margin-bottom: .8rem; }
+.collapse-icon { width: 22px; height: 22px; display: grid; place-items: center; color: var(--text-muted); transition: transform .2s; }
+.collapse-icon::before { content: "▾"; font-size: 1rem; }
+details[open] > summary .collapse-icon { transform: rotate(180deg); }
+details.sub-collapsible > summary {
+  list-style: none; cursor: pointer; font-weight: 600; color: var(--sage-strong); min-height: 44px;
+  display: flex; align-items: center; gap: .4rem;
+}
+details.sub-collapsible > summary::before { content: "＋"; font-weight: 700; }
+details.sub-collapsible[open] > summary::before { content: "－"; }
+details.sub-collapsible[open] > summary { margin-bottom: .6rem; }
+.collapsible-body { animation: reveal .3s ease; }
 .badge { font-size: .75rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; background: var(--bg-soft); color: var(--text-muted); border: 1px solid var(--line); }
 .badge.required { background: var(--sage-soft); color: var(--sage-strong); border-color: transparent; }
 
 fieldset.question-group { border: 0; margin: 0; padding: 0; min-width: 0; }
-.question { font-weight: 600; font-size: 1.05rem; padding: 0; margin-bottom: .75rem; }
+.question { font-weight: 600; font-size: 1rem; padding: 0; margin-bottom: .6rem; }
 .question-hint { color: var(--text-muted); font-size: .93rem; margin: -.35rem 0 .85rem; }
-.subquestion { margin-top: 1.4rem; padding-top: 1.25rem; border-top: 1px dashed var(--line); animation: reveal .35s ease; }
+.subquestion { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--line); animation: reveal .35s ease; }
 
 /* Auswahl-Karten (Radio/Checkbox optisch versteckt, aber fokussierbar) */
 .option { position: relative; display: block; cursor: pointer; }
 .option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .option-body {
-  display: flex; align-items: center; gap: .7rem; min-height: 54px; padding: .75rem 1rem;
+  display: flex; align-items: center; gap: .6rem; min-height: 48px; padding: .6rem .9rem;
   border-radius: var(--radius-sm); border: 1.5px solid var(--line); background: var(--bg);
   transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
 }
 .option:hover .option-body { border-color: var(--sage); }
 .option input:focus-visible + .option-body { outline: 3px solid var(--focus); outline-offset: 3px; }
 .option input:checked + .option-body {
-  border-color: var(--sage-strong); background: var(--sage-soft);
-  box-shadow: inset 0 0 0 1px var(--sage-strong);
+  border-color: var(--sel-ring); background: var(--sel-bg); color: var(--sel-text);
+  box-shadow: inset 0 0 0 1.5px var(--sel-ring);
 }
+/* Bei Emoji-/Skalen-Auswahl: Nicht gewählte Optionen dezent abblenden, Auswahl leicht hervorheben */
+.mood-grid:has(input:checked) .option input:not(:checked) + .option-body,
+.scale-grid:has(input:checked) .option input:not(:checked) + .option-body,
+.tod-list:has(input:checked) .option input:not(:checked) + .option-body { opacity: .5; }
+.mood-grid .option input:checked + .option-body,
+.scale-grid .option input:checked + .option-body { transform: translateY(-2px); box-shadow: inset 0 0 0 2px var(--sel-ring), 0 4px 14px rgba(0,0,0,.18); }
+.mood-grid .option input:checked + .option-body .option-emoji { transform: scale(1.12); }
+.mood-grid .option-emoji { transition: transform .2s; }
 .option:active .option-body { transform: scale(.985); }
 .option-emoji { font-size: 1.5rem; line-height: 1; }
 .option-check {
@@ -361,24 +397,33 @@ fieldset.question-group { border: 0; margin: 0; padding: 0; min-width: 0; }
 }
 .option input:checked + .option-body .option-check { background: var(--sage-strong); border-color: var(--sage-strong); color: var(--card); }
 
-.mood-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: .6rem; }
-.mood-grid .option-body { flex-direction: column; justify-content: center; text-align: center; min-height: 112px; gap: .4rem; font-weight: 600; }
-.mood-grid .option-emoji { font-size: 2.2rem; }
-.mood-grid .option-check { display: none; }
-@media (max-width: 400px) {
-  .mood-grid { grid-template-columns: repeat(2, 1fr); }
-  .mood-grid .option:last-child { grid-column: 1 / -1; }
+.mood-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4rem; }
+.mood-grid .option-body {
+  flex-direction: column; justify-content: center; text-align: center; min-height: 82px; gap: .3rem;
+  padding: .5rem .15rem; font-weight: 600; font-size: .78rem; line-height: 1.15;
 }
+.mood-grid .option-emoji { font-size: 1.9rem; }
+.mood-grid .option-check { display: none; }
+@media (min-width: 600px) { .mood-grid .option-body { min-height: 96px; font-size: .9rem; } .mood-grid .option-emoji { font-size: 2.2rem; } }
 
 .option-list { display: grid; gap: .55rem; }
 @media (min-width: 600px) { .option-list.two-col { grid-template-columns: 1fr 1fr; } }
 .option-list.inline { grid-template-columns: repeat(3, 1fr); }
-.option-list.inline .option-body { justify-content: center; text-align: center; font-weight: 600; }
+.option-list.inline.solo-list { grid-template-columns: repeat(2, 1fr); }
+.option-list.inline .option-body { justify-content: center; text-align: center; font-weight: 600; padding: .5rem .3rem; font-size: .92rem; line-height: 1.2; }
+.option-list.inline.inline-4 { grid-template-columns: repeat(4, 1fr); gap: .4rem; }
+.option-list.inline.inline-4 .option-body { font-size: .82rem; }
+.option-list { gap: .45rem; }
+.option-list.two-col { grid-template-columns: 1fr 1fr; }
+.option-list.two-col .option-body { font-size: .9rem; line-height: 1.2; }
+.option-list.two-col .option-check { display: none; }
 .option-list.inline .option-check { display: none; }
 
 .chip-list { display: flex; flex-wrap: wrap; gap: .5rem; }
-.chip-list .option-body { border-radius: 999px; min-height: 46px; padding: .55rem 1rem; font-size: .97rem; gap: .45rem; }
-.chip-list .option-check { margin-left: 0; width: 20px; height: 20px; border-radius: 6px; font-size: .75rem; }
+.chip-list { gap: .4rem; }
+.chip-list .option-body { border-radius: 999px; min-height: 40px; padding: .4rem .85rem; font-size: .9rem; gap: .35rem; }
+.chip-list .option-check { display: none; }
+.chip-list .option input:checked + .option-body .option-label::before { content: "✓ "; font-weight: 700; color: var(--sel-text); }
 
 /* Speichern */
 .save-card { text-align: center; }
@@ -576,9 +621,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         <div class="signal-row">
           <div>
             <strong id="own-signal-title">Lust-Signal</strong>
-            <p class="muted small" id="own-signal-text" style="margin:0">Zeig deinem Gegenüber unverbindlich, dass du heute Lust hättest.</p>
+            <p class="muted small" id="own-signal-text" style="margin:0">Unverbindlich zeigen, dass du heute Lust hättest.</p>
           </div>
-          <button type="button" class="btn btn-small" id="signal-btn">✨ Ich hätte heute Lust</button>
+          <button type="button" class="btn btn-small" id="signal-btn">✨ Lust</button>
         </div>
       </div>
 
@@ -600,7 +645,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <p class="field-label" id="mode-label">Art des Eintrags</p>
           <div class="segmented" role="group" aria-labelledby="mode-label">
             <button type="button" id="mode-full" aria-pressed="true">Ausführlich</button>
-            <button type="button" id="mode-quick" aria-pressed="false">Schnell: Lust heute?</button>
+            <button type="button" id="mode-quick" aria-pressed="false">Schnell</button>
           </div>
           <p class="muted small" id="mode-hint" style="margin:.5rem 0 0">Das ganze Formular für euren vereinbarten Tag.</p>
         </div>
@@ -633,20 +678,23 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         </section>
 
         <!-- Abschnitt B -->
-        <section class="card form-section" id="section-b" aria-labelledby="section-b-title" data-full-only>
-          <div class="section-head">
+        <details class="card form-section collapsible" id="section-b" data-full-only>
+          <summary class="section-head">
             <span class="section-tag" aria-hidden="true">B</span>
             <h2 id="section-b-title">Was beeinflusst meine Stimmung?</h2>
             <span class="badge">optional</span>
-          </div>
+            <span class="collapse-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="collapsible-body">
           <fieldset class="question-group">
             <legend class="question">Was beschäftigt mich heute?</legend>
             <p class="question-hint">Mehrfachauswahl möglich.</p>
             <div class="chip-list" id="factor-options"></div>
           </fieldset>
           <label class="field-label" for="factors-note">Möchtest du noch etwas ergänzen? <span class="field-hint">(optional)</span></label>
-          <textarea id="factors-note" class="textarea" maxlength="2000" rows="3"></textarea>
-        </section>
+          <textarea id="factors-note" class="textarea" maxlength="2000" rows="2"></textarea>
+          </div>
+        </details>
 
         <!-- Abschnitt C: Lust & Wünsche -->
         <section class="card form-section" id="section-l" aria-labelledby="section-l-title">
@@ -664,7 +712,14 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <div class="subquestion">
             <fieldset class="question-group">
               <legend class="question">Wie oft hätte ich gern Sex? <span class="field-hint">(optional)</span></legend>
-              <div class="option-list two-col" id="frequency-wish-options"></div>
+              <div class="option-list inline inline-4" id="frequency-wish-options"></div>
+            </fieldset>
+          </div>
+
+          <div class="subquestion" id="solo-group" hidden>
+            <fieldset class="question-group">
+              <legend class="question">Habe ich mich heute selbst befriedigt? <span class="field-hint">(optional)</span></legend>
+              <div class="option-list inline solo-list" id="solo-options"></div>
             </fieldset>
           </div>
 
@@ -675,22 +730,22 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
             </fieldset>
           </div>
 
-          <div class="subquestion" data-full-only>
+          <details class="subquestion sub-collapsible" id="more-wishes" data-full-only>
+            <summary>Mehr Wünsche angeben <span class="field-hint">(optional)</span></summary>
+            <div class="collapsible-body">
             <fieldset class="question-group">
-              <legend class="question">Was würde meine Lust fördern? <span class="field-hint">(optional)</span></legend>
+              <legend class="question">Was würde meine Lust fördern?</legend>
               <p class="question-hint">Mehrfachauswahl möglich.</p>
               <div class="chip-list" id="booster-options"></div>
             </fieldset>
             <label class="field-label" for="boost-note">Mein konkreter Wunsch <span class="field-hint">(optional)</span></label>
             <textarea id="boost-note" class="textarea" maxlength="2000" rows="2"></textarea>
-          </div>
-
-          <div class="subquestion" data-full-only>
-            <fieldset class="question-group">
-              <legend class="question">Wünsche ich mir mehr Initiative von meinem Gegenüber? <span class="field-hint">(optional)</span></legend>
+            <fieldset class="question-group" style="margin-top:1rem">
+              <legend class="question">Wünsche ich mir mehr Initiative von meinem Gegenüber?</legend>
               <div class="option-list inline" id="initiative-wish-options"></div>
             </fieldset>
-          </div>
+            </div>
+          </details>
         </section>
 
         <!-- Abschnitt D: Intimität -->
@@ -730,20 +785,23 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         </section>
 
         <!-- Abschnitt E: Reflexion -->
-        <section class="card form-section" id="section-d" aria-labelledby="section-d-title" data-full-only>
-          <div class="section-head">
+        <details class="card form-section collapsible" id="section-d" data-full-only>
+          <summary class="section-head">
             <span class="section-tag" aria-hidden="true">E</span>
             <h2 id="section-d-title">Freiwillige Reflexion</h2>
             <span class="badge">optional</span>
-          </div>
+            <span class="collapse-icon" aria-hidden="true"></span>
+          </summary>
+          <div class="collapsible-body">
           <fieldset class="question-group" aria-describedby="pressure-hint">
             <legend class="question">Habe ich mich heute unter Druck gefühlt?</legend>
             <p class="question-hint" id="pressure-hint">Nur für deine eigene Wahrnehmung – es geht nicht um Schuld.</p>
             <div class="option-list inline" id="pressure-options"></div>
           </fieldset>
           <label class="field-label" for="wish-note">Was hätte mir heute gutgetan? <span class="field-hint">(optional)</span></label>
-          <textarea id="wish-note" class="textarea" maxlength="2000" rows="3"></textarea>
-        </section>
+          <textarea id="wish-note" class="textarea" maxlength="2000" rows="2"></textarea>
+          </div>
+        </details>
 
         <!-- Abschnitt E -->
         <section class="card form-section save-card" id="section-e" aria-labelledby="section-e-title">
@@ -816,7 +874,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       <details class="privacy-details">
       <summary>Datenschutzhinweise anzeigen</summary>
       <ul class="privacy-list">
-        <li>Alle Angaben bleiben ausschließlich in diesem Browser auf diesem Gerät. Es werden keine Daten an Server gesendet – kein Konto, keine Analyse, kein Tracking, keine Werbung.</li>
+        <li>Alle Angaben bleiben ausschließlich in diesem Browser auf diesem Gerät – kein Konto, keine Analyse, kein Tracking, keine Werbung.</li>
+        <li>Einzige Ausnahme: Wenn du „Push (ntfy)“ einrichtest, wird beim Lust-Signal eine kurze Nachricht an euren eigenen Server <strong>ntfy.chaoten.online</strong> gesendet. Einträge, Antworten und die Wunschliste werden nie übertragen.</li>
         <li><strong>Wenn Browserdaten gelöscht werden</strong> (z.&nbsp;B. „Verlauf/Websitedaten löschen“, privater Modus, Speicherbereinigung des Systems), <strong>können die Einträge unwiederbringlich verloren gehen.</strong> Erstelle deshalb regelmäßig eine Sicherung.</li>
         <li>Andere Geräte oder andere Browser sehen diese Daten nicht. Zum Übertragen nutze Export und Import.</li>
         <li>GitHub Pages stellt nur die App bereit und schützt keine privaten Daten. Jede Person mit Zugriff auf dieses entsperrte Gerät und diesen Browser könnte die gespeicherten Einträge sehen.</li>
@@ -845,6 +904,46 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <button type="submit" class="btn btn-primary">Namen speichern</button>
         </div>
       </form>
+    </div>
+
+    <div class="card settings-card">
+      <h2>Push (ntfy)</h2>
+      <p class="muted">Sendet das Lust-Signal als Push-Benachrichtigung aufs Handy der anderen Person – über euren Server <strong>ntfy.chaoten.online</strong>. Die andere Person abonniert dafür in der ntfy-App ihr Topic.</p>
+      <form id="push-form" novalidate autocomplete="off">
+        <label class="field-label" for="push-token">Zugangstoken</label>
+        <input id="push-token" class="input" type="password" maxlength="200" autocomplete="off" spellcheck="false" placeholder="tk_…">
+        <div class="name-grid">
+          <div>
+            <label class="field-label" for="push-topic-A">Topic von <span data-name="A">Person A</span></label>
+            <input id="push-topic-A" class="input" type="text" maxlength="64" autocomplete="off" spellcheck="false" autocapitalize="off">
+          </div>
+          <div>
+            <label class="field-label" for="push-topic-B">Topic von <span data-name="B">Person B</span></label>
+            <input id="push-topic-B" class="input" type="text" maxlength="64" autocomplete="off" spellcheck="false" autocapitalize="off">
+          </div>
+        </div>
+        <p class="muted small" style="margin:.6rem 0 0">Sendet <span data-name="A">Person A</span> ein Signal, geht der Push an das Topic von <span data-name="B">Person B</span> – und umgekehrt.</p>
+        <p class="field-error" id="push-error" role="alert" hidden></p>
+        <div class="btn-row" style="margin-top:1rem">
+          <button type="submit" class="btn btn-primary">Push speichern</button>
+          <button type="button" class="btn" id="push-test-btn">Test senden</button>
+          <button type="button" class="btn-link" id="push-clear-btn">Push entfernen</button>
+        </div>
+      </form>
+      <div class="notice" style="margin:1rem 0 0">
+        <p>Das Token wird nur in diesem Browser gespeichert – nicht im Backup-Export und nicht im (öffentlichen) GitHub-Code. Tipp: Ein Token, das nur in diese beiden Topics schreiben darf.</p>
+      </div>
+    </div>
+
+    <div class="card settings-card">
+      <h2>Selbstbefriedigung</h2>
+      <p class="muted">Blendet im Formular die optionale Frage „Habe ich mich heute selbst befriedigt?“ ein – gleichberechtigt für euch beide. Die Angabe ist wie alle anderen in der gemeinsamen Ansicht sichtbar.</p>
+      <div class="chip-list">
+        <label class="option" for="solo-setting">
+          <input type="checkbox" id="solo-setting">
+          <span class="option-body"><span class="option-label">Frage für beide anzeigen</span><span class="option-check" aria-hidden="true">✓</span></span>
+        </label>
+      </div>
     </div>
 
     <div class="card settings-card">
@@ -997,6 +1096,11 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     { value: 'vor_periode', label: 'Vor der Periode' },
     { value: 'unsicher', label: 'Weiß nicht' }
   ];
+  // Selbstbefriedigung (optional, pro Profil einschaltbar)
+  const SOLO = [
+    { value: 'nein', label: 'Nein' },
+    { value: 'ja', label: 'Ja' }
+  ];
   // Wunschliste
   const WISH_CATEGORIES = [
     { value: 'date', label: 'Date', emoji: '🍷' },
@@ -1122,7 +1226,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   function defaultData() {
     return {
       version: DATA_VERSION,
-      settings: { names: { ...DEFAULT_NAMES }, cycle: { A: false, B: false } },
+      settings: { names: { ...DEFAULT_NAMES }, cycle: { A: false, B: false }, solo: false },
       entries: [],
       wishes: [],
       signals: { A: null, B: null }
@@ -1167,6 +1271,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       mood: pick(MOODS, raw.mood),
       desire,
       cycle: pick(CYCLE, raw.cycle),
+      solo: pick(SOLO, raw.solo),
       frequencyWish: pick(FREQUENCY_WISH, raw.frequencyWish),
       factors: full ? pickMany(FACTORS, raw.factors) : [],
       factorsNote: full ? cleanText(raw.factorsNote) : '',
@@ -1229,6 +1334,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     let wishesRaw = [];
     let signalsRaw = {};
     let cycleRaw = {};
+    let soloRaw = false;
     if (Array.isArray(raw)) {
       entriesRaw = raw;
     } else if (raw && typeof raw === 'object' && Array.isArray(raw.entries)) {
@@ -1237,6 +1343,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       if (Array.isArray(raw.wishes)) wishesRaw = raw.wishes;
       if (raw.signals && typeof raw.signals === 'object') signalsRaw = raw.signals;
       if (raw.settings && raw.settings.cycle && typeof raw.settings.cycle === 'object') cycleRaw = raw.settings.cycle;
+      // Gilt für beide gleich. Ältere Daten (pro Person) → eingeschaltet, wenn es bei einer Person an war.
+      if (raw.settings && raw.settings.solo === true) soloRaw = true;
+      else if (raw.settings && raw.settings.solo && typeof raw.settings.solo === 'object') soloRaw = raw.settings.solo.A === true || raw.settings.solo.B === true;
     }
     if (!entriesRaw) return { ok: false, data: null, validCount: 0, invalidCount: 0 };
 
@@ -1254,7 +1363,11 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       ok: true,
       data: {
         version: DATA_VERSION,
-        settings: { names: normalizeNames(namesRaw), cycle: { A: cycleRaw.A === true, B: cycleRaw.B === true } },
+        settings: {
+          names: normalizeNames(namesRaw),
+          cycle: { A: cycleRaw.A === true, B: cycleRaw.B === true },
+          solo: soloRaw
+        },
         entries,
         wishes: wishesRaw.map(normalizeWish).filter(Boolean),
         signals: { A: normalizeSignal(signalsRaw.A), B: normalizeSignal(signalsRaw.B) }
@@ -1451,6 +1564,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   buildOptions($('#initiator-options'), 'initiator', INITIATOR);
   buildOptions($('#tod-options'), 'timeOfDay', TIME_OF_DAY);
   buildOptions($('#cycle-options'), 'cycle', CYCLE);
+  buildOptions($('#solo-options'), 'solo', SOLO);
   buildOptions($('#wish-category-options'), 'wishCategory', WISH_CATEGORIES);
 
   let entryMode = 'full'; // 'full' = ausführlich, 'quick' = Schnell-Eintrag
@@ -1475,6 +1589,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       mood: checkedValue('mood'),
       desire: desire ? Number(desire) : null,
       cycle: $('#cycle-group').hidden ? '' : checkedValue('cycle'),
+      solo: $('#solo-group').hidden ? '' : checkedValue('solo'),
       frequencyWish: checkedValue('frequencyWish'),
       factors: full ? checkedValues('factors') : [],
       factorsNote: full ? cleanText(factorsNoteInput.value) : '',
@@ -1491,7 +1606,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   }
 
   const contentKey = v => JSON.stringify([
-    v.type || 'full', v.date, v.timeOfDay || '', v.mood, v.desire == null ? null : v.desire, v.cycle || '', v.frequencyWish || '',
+    v.type || 'full', v.date, v.timeOfDay || '', v.mood, v.desire == null ? null : v.desire, v.cycle || '', v.solo || '', v.frequencyWish || '',
     (v.factors || []).slice().sort(), v.factorsNote || '', (v.boosters || []).slice().sort(), v.boostNote || '',
     v.initiativeWish || '', v.intimacy || '', v.initiator || '', v.sexExperience || '', v.afterFeeling || '',
     v.pressure || '', v.wish || ''
@@ -1516,7 +1631,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#mode-full').setAttribute('aria-pressed', String(!quick));
     $('#mode-quick').setAttribute('aria-pressed', String(quick));
     $('#mode-hint').textContent = quick
-      ? 'Kurz festhalten, wie viel Lust du heute hast – an jedem beliebigen Tag.'
+      ? 'Nur Lust (und optional Stimmung) – für jeden beliebigen Tag.'
       : 'Das ganze Formular für euren vereinbarten Tag.';
     const moodBadge = $('#mood-badge');
     moodBadge.textContent = quick ? 'optional' : 'Pflicht';
@@ -1570,6 +1685,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     const show = forceShow || !!(activeProfile && appData.settings.cycle[activeProfile]);
     $('#cycle-group').hidden = !show;
     if (!show) $$('input[name="cycle"]', form).forEach(i => { i.checked = false; });
+  }
+
+  /** Frage zur Selbstbefriedigung nur zeigen, wenn sie fürs aktive Profil eingeschaltet ist (oder beim Bearbeiten vorhanden). */
+  function updateSoloVisibility(forceShow = false) {
+    const show = forceShow || !!(activeProfile && appData.settings.solo);
+    $('#solo-group').hidden = !show;
+    if (!show) $$('input[name="solo"]', form).forEach(i => { i.checked = false; });
   }
 
   function updateDateDisplay() {
@@ -1627,6 +1749,14 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#form-errors').replaceChildren();
   }
 
+  /** Optionale Bereiche zuklappen bzw. aufklappen, wenn darin etwas ausgefüllt ist. */
+  function syncCollapsibles(openIfFilled) {
+    for (const box of $$('details.collapsible, details.sub-collapsible', form)) {
+      const filled = $$('input:checked', box).length > 0 || $$('textarea', box).some(t => t.value.trim());
+      box.open = openIfFilled ? filled : false;
+    }
+  }
+
   /** Setzt das Formular komplett zurück (neuer, leerer Eintrag mit heutigem Datum). */
   function resetForm() {
     form.reset();
@@ -1636,6 +1766,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (todInput) todInput.checked = true;
     $('#edit-banner').hidden = true;
     updateCycleVisibility();
+    updateSoloVisibility();
+    syncCollapsibles(false);
     applyMode('full');
     updateConditionalQuestions();
     clearErrors();
@@ -1658,6 +1790,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (entry.desire) check('desire', String(entry.desire));
     updateCycleVisibility(!!entry.cycle);
     if (entry.cycle) check('cycle', entry.cycle);
+    updateSoloVisibility(!!entry.solo);
+    if (entry.solo) check('solo', entry.solo);
     if (entry.frequencyWish) check('frequencyWish', entry.frequencyWish);
     entry.factors.forEach(f => check('factors', f));
     factorsNoteInput.value = entry.factorsNote;
@@ -1671,6 +1805,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (entry.afterFeeling) check('afterFeeling', entry.afterFeeling);
     if (entry.pressure) check('pressure', entry.pressure);
     wishInput.value = entry.wish;
+    syncCollapsibles(true);
     clearErrors();
     updateDateDisplay();
     updateProgress();
@@ -1919,8 +2054,143 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#own-signal-title').textContent = own ? 'Dein Lust-Signal ist aktiv' : 'Lust-Signal';
     $('#own-signal-text').textContent = own
       ? `${nameOf(partner)} sieht es heute, wenn das eigene Profil geöffnet wird.` + (own.note ? ` Nachricht: „${own.note}“` : '')
-      : 'Zeig deinem Gegenüber unverbindlich, dass du heute Lust hättest.';
-    $('#signal-btn').textContent = own ? 'Signal zurücknehmen' : '✨ Ich hätte heute Lust';
+      : 'Unverbindlich zeigen, dass du heute Lust hättest.';
+    $('#signal-btn').textContent = own ? 'Zurücknehmen' : '✨ Lust';
+    $('#signal-btn').setAttribute('aria-label', own ? 'Lust-Signal zurücknehmen' : 'Lust-Signal senden: Ich hätte heute Lust');
+  }
+
+  /* ==========================================================
+     Push über den eigenen ntfy-Server
+     Konfiguration liegt unter einem eigenen Schlüssel, damit das Token nie im Export landet.
+     ========================================================== */
+  const NTFY_URL = 'https://ntfy.chaoten.online';
+  const PUSH_KEY = 'ourMood.push.v1';
+  const TOPIC_PATTERN = /^[-_A-Za-z0-9]{1,64}$/;
+
+  function loadPushConfig() {
+    try {
+      const raw = JSON.parse(window.localStorage.getItem(PUSH_KEY) || 'null');
+      if (!raw || typeof raw !== 'object') return { token: '', topics: { A: '', B: '' } };
+      const topic = v => (typeof v === 'string' && TOPIC_PATTERN.test(v) ? v : '');
+      return {
+        token: typeof raw.token === 'string' ? raw.token.trim().slice(0, 200) : '',
+        topics: { A: topic(raw.topics && raw.topics.A), B: topic(raw.topics && raw.topics.B) }
+      };
+    } catch (err) {
+      return { token: '', topics: { A: '', B: '' } };
+    }
+  }
+  let pushConfig = loadPushConfig();
+  const pushReadyFor = profile => !!(pushConfig.token && pushConfig.topics[profile]);
+
+  /** Verständliche Fehlermeldung je HTTP-Status. */
+  function pushErrorText(status) {
+    if (status === 401) return 'Token ungültig (401). Bitte das Zugangstoken prüfen.';
+    if (status === 403) return 'Keine Schreibrechte für dieses Topic (403). Bitte die Rechte des Tokens prüfen.';
+    if (status === 400) return 'Der Server hat die Nachricht abgelehnt (400 – Format).';
+    if (status === 429) return 'Zu viele Nachrichten (429). Bitte später erneut versuchen.';
+    if (status === 0) return 'Server nicht erreichbar. Bitte Internetverbindung prüfen.';
+    return `Senden fehlgeschlagen (HTTP ${status}).`;
+  }
+
+  /** base64url ohne Padding – für ntfys ?auth=-Parameter (Fallback, falls der Header per CORS blockiert wird). */
+  function base64Url(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    bytes.forEach(b => { binary += String.fromCharCode(b); });
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  /**
+   * Sendet eine Nachricht im JSON-Format an den ntfy-Server.
+   * Rückgabe: { ok: true } oder { ok: false, status } (status 0 = Netzwerk-/CORS-Fehler).
+   */
+  async function sendPush(topic, title, message, tags) {
+    const payload = { topic, title, message, priority: 3, tags };
+    if (/^https:/.test(window.location.href)) payload.click = window.location.origin + window.location.pathname;
+    const body = JSON.stringify(payload);
+    try {
+      const res = await fetch(NTFY_URL, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + pushConfig.token, 'Content-Type': 'application/json' },
+        body, cache: 'no-store', referrerPolicy: 'no-referrer', credentials: 'omit'
+      });
+      return res.ok ? { ok: true } : { ok: false, status: res.status };
+    } catch (err) {
+      // Netzwerkfehler oder CORS-Vorabprüfung blockiert → einfacher Request mit ?auth=
+      try {
+        const res = await fetch(`${NTFY_URL}/?auth=${base64Url('Bearer ' + pushConfig.token)}`, {
+          method: 'POST', body, cache: 'no-store', referrerPolicy: 'no-referrer', credentials: 'omit'
+        });
+        return res.ok ? { ok: true } : { ok: false, status: res.status };
+      } catch (err2) {
+        return { ok: false, status: 0 };
+      }
+    }
+  }
+
+  function renderPushSettings() {
+    $('#push-token').value = pushConfig.token;
+    $('#push-topic-A').value = pushConfig.topics.A;
+    $('#push-topic-B').value = pushConfig.topics.B;
+    $('#push-error').hidden = true;
+  }
+
+  function readPushForm() {
+    const token = $('#push-token').value.trim();
+    const topics = { A: $('#push-topic-A').value.trim(), B: $('#push-topic-B').value.trim() };
+    let error = '';
+    if (!token) error = 'Bitte gib das Zugangstoken ein.';
+    else if (/\s/.test(token)) error = 'Das Token darf keine Leerzeichen enthalten.';
+    else if (!topics.A && !topics.B) error = 'Bitte gib mindestens ein Topic ein.';
+    else if ((topics.A && !TOPIC_PATTERN.test(topics.A)) || (topics.B && !TOPIC_PATTERN.test(topics.B))) error = 'Topics dürfen nur Buchstaben, Zahlen, - und _ enthalten (max. 64 Zeichen).';
+    return { error, config: { token, topics } };
+  }
+
+  function showPushError(text) {
+    const node = $('#push-error');
+    node.textContent = text;
+    node.hidden = !text;
+  }
+
+  function savePushConfig(event) {
+    if (event) event.preventDefault();
+    const { error, config } = readPushForm();
+    if (error) { showPushError(error); return false; }
+    try { window.localStorage.setItem(PUSH_KEY, JSON.stringify(config)); } catch (err) {
+      showPushError('Die Einstellungen konnten nicht gespeichert werden.');
+      return false;
+    }
+    pushConfig = config;
+    showPushError('');
+    toast('Push-Einstellungen gespeichert.');
+    return true;
+  }
+
+  async function testPush() {
+    if (!savePushConfig()) return;
+    const btn = $('#push-test-btn');
+    btn.disabled = true;
+    try {
+      const targets = PROFILES.filter(p => pushConfig.topics[p]);
+      const results = [];
+      for (const p of targets) {
+        const r = await sendPush(pushConfig.topics[p], 'Our Mood', `Test – Push für ${nameOf(p)} funktioniert.`, ['white_check_mark']);
+        results.push(r.ok ? `${nameOf(p)}: angekommen beim Server ✓` : `${nameOf(p)}: ${pushErrorText(r.status)}`);
+      }
+      showInfo('Test-Nachricht', results);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function clearPushConfig() {
+    const ok = await confirmAction('Push entfernen?', 'Token und Topics werden aus diesem Browser gelöscht. Lust-Signale werden dann nur noch in der App angezeigt.', 'Entfernen', { danger: true });
+    if (!ok) return;
+    try { window.localStorage.removeItem(PUSH_KEY); } catch (err) { /* ignorieren */ }
+    pushConfig = { token: '', topics: { A: '', B: '' } };
+    renderPushSettings();
+    toast('Push entfernt.');
   }
 
   async function toggleSignal() {
@@ -1932,7 +2202,12 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     } else {
       const res = await openDialog({
         title: 'Lust-Signal senden',
-        message: [`${nameOf(otherProfile(profile))} sieht heute beim Öffnen des eigenen Profils, dass du Lust hättest. Unverbindlich – es ist eine Einladung, keine Erwartung. Um Mitternacht verschwindet das Signal.`],
+        message: [
+          pushReadyFor(otherProfile(profile))
+            ? `${nameOf(otherProfile(profile))} bekommt eine Push-Benachrichtigung aufs Handy und sieht das Signal auch hier beim Öffnen des eigenen Profils.`
+            : `${nameOf(otherProfile(profile))} sieht heute beim Öffnen des eigenen Profils, dass du Lust hättest. (Für eine Benachrichtigung aufs andere Handy: Einstellungen → Push.)`,
+          'Unverbindlich – es ist eine Einladung, keine Erwartung. Um Mitternacht verschwindet das Signal.'
+        ],
         input: { label: 'Kurze Nachricht (optional)' },
         buttons: [
           { label: 'Abbrechen', value: 'cancel' },
@@ -1948,7 +2223,19 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       return;
     }
     renderSignals();
-    toast(appData.signals[profile] ? 'Lust-Signal gesendet ✨' : 'Signal zurückgenommen.');
+    const sig = appData.signals[profile];
+    const partner = otherProfile(profile);
+    if (!sig) { toast('Signal zurückgenommen.'); return; }
+    if (!pushReadyFor(partner)) { toast('Lust-Signal gesetzt ✨'); return; }
+    toast('Lust-Signal wird gesendet …');
+    const result = await sendPush(
+      pushConfig.topics[partner],
+      `✨ ${nameOf(profile)} hätte heute Lust`,
+      sig.note || 'Unverbindlich – nur ein kleines Signal.',
+      ['sparkles']
+    );
+    if (result.ok) toast(`Push an ${nameOf(partner)} gesendet ✨`);
+    else showInfo('Push nicht gesendet', [`Das Signal ist in der App gesetzt, aber die Benachrichtigung konnte nicht gesendet werden.`, pushErrorText(result.status)]);
   }
 
   /* ==========================================================
@@ -2355,6 +2642,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       ['Lust auf Sex', desireText(entry.desire) || 'keine Angabe'],
       ['Gewünschte Häufigkeit', labelOf(FREQUENCY_WISH, entry.frequencyWish) || 'keine Angabe']
     ];
+    if (entry.solo) rows.push(['Selbst befriedigt', labelOf(SOLO, entry.solo)]);
     if (entry.cycle) rows.push(['Zyklusphase', labelOf(CYCLE, entry.cycle)]);
     if (!quick) {
       rows.push(['Was würde meine Lust fördern', entry.boosters.length ? entry.boosters.map(b => labelOf(BOOSTERS, b)).join(', ') : '–']);
@@ -2593,6 +2881,18 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     parts.push(el('h4', { className: 'stat-sub', text: 'Wie viel Lust wurde angegeben?' }));
     parts.push(barList(DESIRE.map(d => ({ label: `${d.value} – ${d.label}`, count: withDesire.filter(e => String(e.desire) === d.value).length })), withDesire.length));
 
+    const withSolo = entries.filter(e => e.solo);
+    if (withSolo.length) {
+      parts.push(el('h4', { className: 'stat-sub', text: 'Selbstbefriedigung' }));
+      parts.push(barList(countBy(withSolo, SOLO, (e, v) => e.solo === v).reverse(), withSolo.length));
+      const yes = withSolo.filter(e => e.solo === 'ja' && e.desire);
+      const no = withSolo.filter(e => e.solo === 'nein' && e.desire);
+      if (yes.length >= 2 && no.length >= 2) {
+        const avgOf = list => list.reduce((sum, e) => sum + e.desire, 0) / list.length;
+        parts.push(el('p', { className: 'muted small', style: 'margin:.7rem 0 0', text: `Ø Lust an Tagen mit „Ja“: ${formatNumber(avgOf(yes))} / 5 · mit „Nein“: ${formatNumber(avgOf(no))} / 5 – nur eine Beschreibung, keine Ursache.` }));
+      }
+    }
+
     const withCycle = withDesire.filter(e => e.cycle && e.cycle !== 'unsicher');
     if (withCycle.length) {
       parts.push(el('h4', { className: 'stat-sub', text: 'Lust nach Zyklusphase' }));
@@ -2717,6 +3017,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#name-b').value = nameOf('B');
     $('#names-error').hidden = true;
     for (const p of PROFILES) $(`#cycle-setting-${p}`).checked = !!appData.settings.cycle[p];
+    $('#solo-setting').checked = !!appData.settings.solo;
+    renderPushSettings();
     const n = appData.entries.length;
     $('#storage-summary').textContent = storageAvailable
       ? `Aktuell gespeichert: ${n === 1 ? '1 Eintrag' : n + ' Einträge'}.`
@@ -2824,7 +3126,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         version: DATA_VERSION,
         settings: {
           names: result.hasNames ? result.data.settings.names : { ...appData.settings.names },
-          cycle: result.hasNames ? result.data.settings.cycle : { ...appData.settings.cycle }
+          cycle: result.hasNames ? result.data.settings.cycle : { ...appData.settings.cycle },
+          solo: result.hasNames ? result.data.settings.solo : appData.settings.solo
         },
         entries: result.data.entries,
         wishes: result.data.wishes,
@@ -2875,7 +3178,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       showInfo('Nicht gelöscht', 'Die Bestätigung stimmte nicht. Es wurde nichts gelöscht.');
       return;
     }
-    try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignorieren */ }
+    try { window.localStorage.removeItem(STORAGE_KEY); window.localStorage.removeItem(PUSH_KEY); } catch (e) { /* ignorieren */ }
+    pushConfig = { token: '', topics: { A: '', B: '' } };
     appData = defaultData();
     activeProfile = null;
     sharedViewOpen = false;
@@ -2913,6 +3217,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   $$('.step-link', form).forEach(link => link.addEventListener('click', event => {
     event.preventDefault();
     const target = $(link.getAttribute('href'));
+    if (target.tagName === 'DETAILS') target.open = true;
     target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     const focusable = target.querySelector('input, textarea, button');
     if (focusable) focusable.focus({ preventScroll: true });
@@ -2944,6 +3249,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
 
   $('#names-form').addEventListener('submit', handleNamesSubmit);
   $('#signal-btn').addEventListener('click', toggleSignal);
+  $('#push-form').addEventListener('submit', savePushConfig);
+  $('#push-test-btn').addEventListener('click', testPush);
+  $('#push-clear-btn').addEventListener('click', clearPushConfig);
   $('#wish-form').addEventListener('submit', addWish);
   $$('[data-cycle-profile]').forEach(box => box.addEventListener('change', () => {
     const p = box.dataset.cycleProfile;
@@ -2952,6 +3260,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (!editingId) updateCycleVisibility();
     toast(box.checked ? `Zyklus-Frage für ${nameOf(p)} eingeschaltet.` : `Zyklus-Frage für ${nameOf(p)} ausgeschaltet.`);
   }));
+  $('#solo-setting').addEventListener('change', event => {
+    const box = event.target;
+    appData.settings.solo = box.checked;
+    if (!persist()) { appData.settings.solo = !box.checked; box.checked = !box.checked; showInfo('Speichern nicht möglich', 'Die Einstellung konnte nicht gespeichert werden.'); return; }
+    if (!editingId) updateSoloVisibility();
+    toast(box.checked ? 'Frage für beide eingeschaltet.' : 'Frage für beide ausgeschaltet.');
+  });
   $('#export-btn').addEventListener('click', exportData);
   $('#import-input').addEventListener('change', handleImportFile);
   $('#delete-all-btn').addEventListener('click', deleteAllData);
