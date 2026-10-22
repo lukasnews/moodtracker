@@ -16,8 +16,11 @@ Zum lokalen Ausprobieren öffnest du `index.html` einfach per Doppelklick im Bro
 ## Funktionen
 
 - Zwei getrennte Profile, deren Namen sich in den Einstellungen ändern lassen. Das Profil wird nach jedem Laden und nach „Fertig“ neu abgefragt.
-- Ausführliches Formular mit den Abschnitten A–F (Stimmung, Einflüsse, **Lust & Wünsche**, Intimität, Reflexion, Speichern) und Fortschrittsanzeige. Kein Kalender.
+- Ausführliches Formular mit den Abschnitten A–F (Stimmung, Einflüsse, **Lust & Wünsche**, Intimität, Reflexion, Speichern) und Fortschrittsanzeige. 
 - **Lust & Wünsche:** Lust-Skala 1–5, gewünschte Häufigkeit, „Was würde meine Lust fördern?“, Wunsch nach mehr Initiative; bei Nähe oder Sex zusätzlich „Wer hat die Initiative ergriffen?“.
+- **Mehrere Einträge pro Tag** mit Tageszeit (morgens, mittags, abends, nachts) – z. B. morgens „nicht so gut“, abends „sehr gut“. Rückfrage nur bei gleicher Tageszeit.
+- **Kleiner Monatskalender** über der Eintragsliste: zeigt pro Tag die Stimmungs-Emojis; Antippen zeigt die Einträge dieses Tages.
+- Profilbild zeigt den Anfangsbuchstaben des Namens (bei gleichem Anfangsbuchstaben zwei Buchstaben).
 - **Schnell-Eintrag „Lust heute?“** für beliebige Tage: Lust (Pflicht), Stimmung und Wunsch-Häufigkeit (optional).
 - Zusatzfragen erscheinen nur, wenn sie passen (Sex → Erleben; Nähe/Sex → Gefühl danach).
 - Schutz vor doppeltem Speichern, Hinweis bei ungespeicherten Eingaben, Rückfrage bei mehreren Einträgen am selben Tag.

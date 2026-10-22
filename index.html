@@ -231,6 +231,37 @@ main { padding: 1.25rem 0 4rem; }
 .scale-grid .option-label { font-size: .8rem; line-height: 1.2; }
 .scale-grid .option-check { display: none; }
 
+/* Tageszeit */
+.tod-list { grid-template-columns: repeat(4, 1fr); }
+.tod-list .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .15rem; min-height: 64px; padding: .45rem .2rem; font-size: .88rem; font-weight: 600; }
+.tod-list .option-emoji { font-size: 1.2rem; }
+.tod-list .option-check { display: none; }
+
+/* Kleiner Monatskalender */
+.calendar { padding: 1rem; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .6rem; }
+.cal-title { font-size: 1.1rem; text-transform: capitalize; }
+.cal-nav {
+  width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--bg);
+  font-size: 1.4rem; line-height: 1; cursor: pointer; color: var(--text);
+}
+.cal-nav:disabled { opacity: .35; cursor: default; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-weekday { text-align: center; font-size: .75rem; font-weight: 700; color: var(--text-muted); padding-bottom: .2rem; }
+.cal-day {
+  min-height: 52px; border-radius: 10px; border: 1px solid transparent; background: transparent; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 1px; padding: 4px 0 2px;
+  color: var(--text); font-size: .85rem;
+}
+.cal-day:hover:not(:disabled) { background: var(--bg-soft); }
+.cal-day:disabled { color: var(--text-muted); opacity: .45; cursor: default; }
+.cal-day.has-entries { background: var(--sage-soft); }
+.cal-day.today .cal-num { font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.cal-day[aria-pressed="true"] { border-color: var(--sage-strong); box-shadow: inset 0 0 0 1px var(--sage-strong); }
+.cal-marks { font-size: .85rem; line-height: 1.1; white-space: nowrap; }
+.cal-more { font-size: .65rem; font-weight: 700; color: var(--text-muted); margin-left: 1px; }
+.day-filter { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin: 0 0 .7rem; }
+
 /* Kennzahlen & Verlauf in der Auswertung */
 .stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .6rem; margin-bottom: 1.2rem; }
 .stat-tile { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .8rem 1rem; }
@@ -518,6 +549,10 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <p class="date-display" id="date-display" aria-hidden="true"></p>
           <input type="date" id="entry-date" class="input" required aria-describedby="date-error">
           <p class="field-error" id="date-error" hidden></p>
+          <fieldset class="question-group" style="margin-top:1rem">
+            <legend class="field-label" style="margin-top:0">Tageszeit <span class="field-hint">(optional – mehrere Einträge pro Tag sind möglich)</span></legend>
+            <div class="option-list tod-list" id="tod-options"></div>
+          </fieldset>
           <p class="field-label" id="mode-label">Art des Eintrags</p>
           <div class="segmented" role="group" aria-labelledby="mode-label">
             <button type="button" id="mode-full" aria-pressed="true">Ausführlich</button>
@@ -688,7 +723,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   <!-- ======================= EINTRÄGE ======================= -->
   <section id="view-history" class="view" aria-labelledby="history-title" hidden>
     <h2 id="history-title" class="view-title" tabindex="-1">Unsere bisherigen Einträge</h2>
-    <p class="view-intro">Eine schlichte Liste – ohne Kalender, ohne Vergleich.</p>
+    <p class="view-intro">Kleiner Kalender zur Übersicht pro Tag und eine schlichte Liste – ohne Vergleich.</p>
     <div class="card" id="history-filters"></div>
     <div id="history-content"></div>
   </section>
@@ -869,6 +904,23 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     { value: 'weniger', label: 'Lieber weniger' }
   ];
 
+  const TIME_OF_DAY = [
+    { value: 'morgens', label: 'Morgens', emoji: '🌅' },
+    { value: 'mittags', label: 'Mittags', emoji: '☀️' },
+    { value: 'abends', label: 'Abends', emoji: '🌆' },
+    { value: 'nachts', label: 'Nachts', emoji: '🌙' }
+  ];
+  const TIME_ORDER = { morgens: 1, mittags: 2, abends: 3, nachts: 4 };
+
+  /** Tageszeit passend zur aktuellen Uhrzeit vorschlagen. */
+  function currentTimeOfDay() {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 11) return 'morgens';
+    if (h >= 11 && h < 17) return 'mittags';
+    if (h >= 17 && h < 23) return 'abends';
+    return 'nachts';
+  }
+
   const PROFILES = ['A', 'B'];
   const DEFAULT_NAMES = { A: 'Person A', B: 'Person B' };
   const STORAGE_KEY = 'ourMood.data.v1';
@@ -1002,6 +1054,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       type,
       profile: raw.profile,
       date: raw.date,
+      timeOfDay: pick(TIME_OF_DAY, raw.timeOfDay),
       mood: pick(MOODS, raw.mood),
       desire,
       frequencyWish: pick(FREQUENCY_WISH, raw.frequencyWish),
@@ -1250,6 +1303,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   buildOptions($('#booster-options'), 'boosters', BOOSTERS, 'checkbox');
   buildOptions($('#initiative-wish-options'), 'initiativeWish', INITIATIVE_WISH);
   buildOptions($('#initiator-options'), 'initiator', INITIATOR);
+  buildOptions($('#tod-options'), 'timeOfDay', TIME_OF_DAY);
 
   let entryMode = 'full'; // 'full' = ausführlich, 'quick' = Schnell-Eintrag
 
@@ -1269,6 +1323,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     return {
       type: entryMode,
       date: dateInput.value,
+      timeOfDay: checkedValue('timeOfDay'),
       mood: checkedValue('mood'),
       desire: desire ? Number(desire) : null,
       frequencyWish: checkedValue('frequencyWish'),
@@ -1287,7 +1342,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   }
 
   const contentKey = v => JSON.stringify([
-    v.type || 'full', v.date, v.mood, v.desire == null ? null : v.desire, v.frequencyWish || '',
+    v.type || 'full', v.date, v.timeOfDay || '', v.mood, v.desire == null ? null : v.desire, v.frequencyWish || '',
     (v.factors || []).slice().sort(), v.factorsNote || '', (v.boosters || []).slice().sort(), v.boostNote || '',
     v.initiativeWish || '', v.intimacy || '', v.initiator || '', v.sexExperience || '', v.afterFeeling || '',
     v.pressure || '', v.wish || ''
@@ -1421,6 +1476,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     form.reset();
     editingId = null;
     dateInput.value = todayIso();
+    const todInput = form.querySelector(`input[name="timeOfDay"][value="${currentTimeOfDay()}"]`);
+    if (todInput) todInput.checked = true;
     $('#edit-banner').hidden = true;
     applyMode('full');
     updateConditionalQuestions();
@@ -1439,6 +1496,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       if (input) input.checked = true;
     };
     applyMode(entry.type === 'quick' ? 'quick' : 'full');
+    if (entry.timeOfDay) check('timeOfDay', entry.timeOfDay);
     if (entry.mood) check('mood', entry.mood);
     if (entry.desire) check('desire', String(entry.desire));
     if (entry.frequencyWish) check('frequencyWish', entry.frequencyWish);
@@ -1555,10 +1613,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         await showInfo('Bereits gespeichert', 'Genau dieser Eintrag ist für dieses Datum schon gespeichert. Er wurde nicht doppelt angelegt.');
         return;
       }
-      if (sameDay.length) {
+      // Mehrere Einträge pro Tag sind erlaubt – nachgefragt wird nur bei gleicher Tageszeit.
+      const sameSlot = sameDay.filter(e => e.timeOfDay === values.timeOfDay);
+      if (sameSlot.length) {
+        const slotText = values.timeOfDay ? ` (${labelOf(TIME_OF_DAY, values.timeOfDay).toLowerCase()})` : ' ohne Tageszeit';
         const proceed = await confirmAction(
-          'Schon ein Eintrag an diesem Tag',
-          [`Für ${formatDateLong(values.date)} gibt es bereits ${sameDay.length === 1 ? 'einen Eintrag' : sameDay.length + ' Einträge'} von ${nameOf(profileAtSave)}.`,
+          'Schon ein Eintrag zu dieser Tageszeit',
+          [`Für ${formatDateLong(values.date)}${slotText} gibt es bereits ${sameSlot.length === 1 ? 'einen Eintrag' : sameSlot.length + ' Einträge'} von ${nameOf(profileAtSave)}.`,
             'Möchtest du trotzdem einen weiteren Eintrag speichern? Einen bestehenden Eintrag kannst du auch unter „Einträge“ bearbeiten.'],
           'Weiteren Eintrag speichern'
         );
@@ -1593,16 +1654,35 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   /* ==========================================================
      8. Profile
      ========================================================== */
+  /**
+   * Anfangsbuchstabe(n) für das Profilbild. Bei Standardnamen "Person A/B" bleibt A/B;
+   * haben beide Namen denselben Anfangsbuchstaben, werden zwei Buchstaben gezeigt (z. B. "Le" / "Lu").
+   */
+  function initialsOf(profile) {
+    const letters = name => Array.from(name.trim());
+    const own = nameOf(profile);
+    if (own === DEFAULT_NAMES[profile]) return profile;
+    const other = nameOf(profile === 'A' ? 'B' : 'A');
+    const ownLetters = letters(own);
+    const first = (ownLetters[0] || profile).toLocaleUpperCase('de');
+    const otherFirst = (letters(other)[0] || '').toLocaleUpperCase('de');
+    if (first === otherFirst && other !== DEFAULT_NAMES[profile === 'A' ? 'B' : 'A'] && ownLetters[1]) {
+      return first + ownLetters[1].toLocaleLowerCase('de');
+    }
+    return first;
+  }
+
   function renderNames() {
     for (const p of PROFILES) {
       $$(`[data-name="${p}"]`).forEach(node => { node.textContent = nameOf(p); });
+      $$(`[data-avatar="${p}"]`).forEach(node => { node.textContent = initialsOf(p); });
       $(`.profile-btn[data-profile="${p}"]`).setAttribute('aria-label', `Als ${nameOf(p)} ausfüllen`);
     }
     if (activeProfile) {
       $('#active-name').textContent = nameOf(activeProfile);
       $('#save-for-name').textContent = nameOf(activeProfile);
       const avatar = $('#active-avatar');
-      avatar.textContent = activeProfile;
+      avatar.textContent = initialsOf(activeProfile);
       avatar.classList.toggle('b', activeProfile === 'B');
     }
   }
@@ -1613,6 +1693,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     sharedViewOpen = false;
     justSaved = false;
     expandedEntryId = null;
+    calendarState.selectedDay = '';
     filters.person = 'all';
     resetForm();
     renderNames();
@@ -1693,6 +1774,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     sharedViewOpen = false;
     filters.person = 'all';
     expandedEntryId = null;
+    calendarState.selectedDay = '';
     rerenderCurrent();
   }
 
@@ -1777,7 +1859,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   }
 
   /** Liefert die sichtbaren Einträge gemäß Bereich und Filtern, neueste zuerst. */
-  function getVisibleEntries() {
+  /** Neueste zuerst; am selben Tag nach Tageszeit (Nacht vor Abend vor Mittag vor Morgen). */
+  const byNewest = (a, b) => b.date.localeCompare(a.date) ||
+    ((TIME_ORDER[b.timeOfDay] || 0) - (TIME_ORDER[a.timeOfDay] || 0)) ||
+    b.createdAt.localeCompare(a.createdAt);
+
+  /** Einträge im aktuellen Bereich (eigenes Profil bzw. gemeinsame Ansicht + Personenfilter), ohne Zeitraum. */
+  function getScopeEntries() {
     let list = appData.entries.slice();
     if (sharedViewOpen) {
       if (filters.person !== 'all') list = list.filter(e => e.profile === filters.person);
@@ -1785,13 +1873,90 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       if (!activeProfile) return [];
       list = list.filter(e => e.profile === activeProfile);
     }
+    return list.sort(byNewest);
+  }
+
+  function getVisibleEntries() {
+    let list = getScopeEntries();
     let from = '', to = '';
     if (filters.period === 'custom') { from = filters.from; to = filters.to; }
     else if (filters.period !== 'all') { from = daysAgoIso(Number(filters.period)); }
     // ISO-Datumsstrings lassen sich direkt alphabetisch vergleichen.
     if (from) list = list.filter(e => e.date >= from);
     if (to) list = list.filter(e => e.date <= to);
-    return list.sort((a, b) => (b.date.localeCompare(a.date)) || (b.createdAt.localeCompare(a.createdAt)));
+    return list;
+  }
+
+  /* ---------- Kleiner Monatskalender (Übersicht pro Tag) ---------- */
+  const calendarState = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDay: '' };
+  const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+  function shiftMonth(delta) {
+    const d = new Date(calendarState.year, calendarState.month + delta, 1);
+    calendarState.year = d.getFullYear();
+    calendarState.month = d.getMonth();
+    renderHistory();
+  }
+
+  function selectCalendarDay(iso) {
+    calendarState.selectedDay = calendarState.selectedDay === iso ? '' : iso;
+    expandedEntryId = null;
+    renderHistory();
+    const again = document.querySelector(`.cal-day[data-date="${iso}"]`);
+    if (again) again.focus();
+  }
+
+  function renderCalendar(scopeEntries) {
+    const { year, month, selectedDay } = calendarState;
+    const today = todayIso();
+    const byDate = new Map();
+    for (const e of scopeEntries) {
+      if (!byDate.has(e.date)) byDate.set(e.date, []);
+      byDate.get(e.date).push(e);
+    }
+    const monthName = new Date(year, month, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    const now = new Date();
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+
+    const head = el('div', { className: 'cal-head' }, [
+      el('button', { type: 'button', className: 'cal-nav', 'aria-label': 'Vorheriger Monat', text: '‹', onclick: () => shiftMonth(-1) }),
+      el('h3', { className: 'cal-title', 'aria-live': 'polite', text: monthName }),
+      el('button', { type: 'button', className: 'cal-nav', 'aria-label': 'Nächster Monat', text: '›', disabled: isCurrentMonth, onclick: () => shiftMonth(1) })
+    ]);
+
+    const cells = WEEKDAYS.map(w => el('span', { className: 'cal-weekday', 'aria-hidden': 'true', text: w }));
+    const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7; // Montag = 0
+    for (let i = 0; i < firstWeekday; i++) cells.push(el('span', { className: 'cal-empty', 'aria-hidden': 'true' }));
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const iso = `${year}-${pad2(month + 1)}-${pad2(day)}`;
+      const dayEntries = (byDate.get(iso) || []).slice().reverse(); // morgens zuerst
+      const emojis = dayEntries.map(e => (optionOf(MOODS, e.mood) || { emoji: '💭' }).emoji);
+      const shown = emojis.slice(0, 2);
+      const label = `${formatDateLong(iso)}: ` + (dayEntries.length
+        ? `${dayEntries.length} ${dayEntries.length === 1 ? 'Eintrag' : 'Einträge'} – ` + dayEntries.map(entrySummaryText).join('; ')
+        : 'kein Eintrag');
+      cells.push(el('button', {
+        type: 'button',
+        className: 'cal-day' + (dayEntries.length ? ' has-entries' : '') + (iso === today ? ' today' : ''),
+        dataset: { date: iso },
+        'aria-label': label,
+        'aria-pressed': String(selectedDay === iso),
+        disabled: iso > today,
+        onclick: () => selectCalendarDay(iso)
+      }, [
+        el('span', { className: 'cal-num', text: String(day) }),
+        el('span', { className: 'cal-marks', 'aria-hidden': 'true' }, [
+          shown.join(''),
+          emojis.length > 2 ? el('span', { className: 'cal-more', text: `+${emojis.length - 2}` }) : null
+        ])
+      ]));
+    }
+    return el('div', { className: 'card calendar' }, [
+      head,
+      el('div', { className: 'cal-grid' }, cells),
+      el('p', { className: 'muted small', style: 'margin:.6rem 0 0', text: 'Tippe auf einen Tag, um seine Einträge zu sehen.' })
+    ]);
   }
 
   function needsProfileState() {
@@ -1810,20 +1975,28 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     const content = $('#history-content');
     if (!sharedViewOpen && !activeProfile) { content.replaceChildren(needsProfileState()); return; }
 
-    const entries = getVisibleEntries();
-    if (!entries.length) {
-      content.replaceChildren(el('div', { className: 'card empty-state' }, [
-        el('span', { className: 'big', 'aria-hidden': 'true', text: '🍃' }),
-        el('p', { text: appData.entries.length ? 'Für diese Auswahl gibt es keine Einträge.' : 'Noch keine Einträge gespeichert.' })
+    const scopeEntries = getScopeEntries();
+    const day = calendarState.selectedDay;
+    const entries = day ? scopeEntries.filter(e => e.date === day) : getVisibleEntries();
+    const parts = [renderCalendar(scopeEntries)];
+
+    if (day) {
+      parts.push(el('div', { className: 'day-filter' }, [
+        el('p', { className: 'result-count', style: 'margin:0', text: `${formatDateLong(day)} · ${entries.length === 1 ? '1 Eintrag' : entries.length + ' Einträge'}` }),
+        el('button', { type: 'button', className: 'btn btn-small', text: 'Alle Tage anzeigen', onclick: () => selectCalendarDay(day) })
       ]));
-      return;
     }
 
-    const list = el('ul', { className: 'entry-list' }, entries.map(renderEntryItem));
-    content.replaceChildren(
-      el('p', { className: 'result-count', text: entries.length === 1 ? '1 Eintrag' : `${entries.length} Einträge` }),
-      list
-    );
+    if (!entries.length) {
+      parts.push(el('div', { className: 'card empty-state' }, [
+        el('span', { className: 'big', 'aria-hidden': 'true', text: '🍃' }),
+        el('p', { text: day ? 'An diesem Tag gibt es keinen Eintrag.' : appData.entries.length ? 'Für diese Auswahl gibt es keine Einträge.' : 'Noch keine Einträge gespeichert.' })
+      ]));
+    } else {
+      if (!day) parts.push(el('p', { className: 'result-count', text: entries.length === 1 ? '1 Eintrag' : `${entries.length} Einträge` }));
+      parts.push(el('ul', { className: 'entry-list' }, entries.map(renderEntryItem)));
+    }
+    content.replaceChildren(...parts);
   }
 
   function renderEntryItem(entry) {
@@ -1855,6 +2028,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   /** Kurzzeile in der Liste, z. B. "Gut · Lust 4/5 · Sex hat stattgefunden". */
   function entrySummaryText(entry) {
     const parts = [];
+    if (entry.timeOfDay) parts.push(labelOf(TIME_OF_DAY, entry.timeOfDay));
     if (entry.type === 'quick') parts.push('Schnell-Eintrag');
     if (entry.mood) parts.push(labelOf(MOODS, entry.mood));
     if (entry.desire) parts.push(`Lust ${entry.desire}/5`);
@@ -1866,7 +2040,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     const quick = entry.type === 'quick';
     const mood = optionOf(MOODS, entry.mood);
     const rows = [
-      ['Datum', formatDateLong(entry.date)],
+      ['Datum', formatDateLong(entry.date) + (entry.timeOfDay ? ` · ${labelOf(TIME_OF_DAY, entry.timeOfDay)}` : '')],
       ['Profil', nameOf(entry.profile)],
       ['Art', quick ? 'Schnell-Eintrag' : 'Ausführlicher Eintrag'],
       ['Stimmung', mood ? `${mood.emoji} ${mood.label}` : '–'],
