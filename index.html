@@ -6,8 +6,8 @@
 <!-- Privatsphäre: keine Suchmaschinen-Indexierung, keine Referrer-Weitergabe -->
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<!-- Sicherheitsrichtlinie: Netzwerkverbindungen sind NUR zum eigenen ntfy-Server erlaubt (für das optionale Lust-Signal per Push) -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://ntfy.chaoten.online; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<!-- Sicherheitsrichtlinie: Netzwerkverbindungen sind NUR zum eigenen ntfy-Server (Push) und zur GitHub-API (verschlüsselter Sync) erlaubt -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://ntfy.chaoten.online https://api.github.com; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="theme-color" content="#f6f1e9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1f1c1a" media="(prefers-color-scheme: dark)">
 <title>Our Mood</title>
@@ -147,6 +147,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .partner-signal strong { display: block; font-size: 1.05rem; }
 .partner-signal p { margin: .2rem 0 0; white-space: pre-wrap; word-break: break-word; }
+
+/* Sync-Status */
+.sync-status { font-size: .9rem; color: var(--text-muted); margin: .9rem 0 0; }
+.sync-status.error { color: var(--rose-strong); font-weight: 600; }
+.sync-status.ok::before { content: "● "; color: var(--sage-strong); }
 
 /* Wunschliste */
 .wish-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
@@ -875,7 +880,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       <summary>Datenschutzhinweise anzeigen</summary>
       <ul class="privacy-list">
         <li>Alle Angaben bleiben ausschließlich in diesem Browser auf diesem Gerät – kein Konto, keine Analyse, kein Tracking, keine Werbung.</li>
-        <li>Einzige Ausnahme: Wenn du „Push (ntfy)“ einrichtest, wird beim Lust-Signal eine kurze Nachricht an euren eigenen Server <strong>ntfy.chaoten.online</strong> gesendet. Einträge, Antworten und die Wunschliste werden nie übertragen.</li>
+        <li>Ausnahmen nur, wenn ihr sie einrichtet: <strong>Sync</strong> legt eure Daten <strong>verschlüsselt</strong> (AES-256, euer Sync-Passwort) in einem privaten GitHub-Repository ab – GitHub kann sie nicht lesen. <strong>Push (ntfy)</strong> sendet beim Lust-Signal eine kurze Nachricht an euren Server ntfy.chaoten.online.</li>
         <li><strong>Wenn Browserdaten gelöscht werden</strong> (z.&nbsp;B. „Verlauf/Websitedaten löschen“, privater Modus, Speicherbereinigung des Systems), <strong>können die Einträge unwiederbringlich verloren gehen.</strong> Erstelle deshalb regelmäßig eine Sicherung.</li>
         <li>Andere Geräte oder andere Browser sehen diese Daten nicht. Zum Übertragen nutze Export und Import.</li>
         <li>GitHub Pages stellt nur die App bereit und schützt keine privaten Daten. Jede Person mit Zugriff auf dieses entsperrte Gerät und diesen Browser könnte die gespeicherten Einträge sehen.</li>
@@ -904,6 +909,27 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <button type="submit" class="btn btn-primary">Namen speichern</button>
         </div>
       </form>
+    </div>
+
+    <div class="card settings-card" id="sync-card">
+      <h2>Sync zwischen euren Handys</h2>
+      <p class="muted">Gleicht Einträge, Wunschliste, Lust-Signale und Einstellungen über ein <strong>privates GitHub-Repository</strong> ab. Alles wird vorher auf dem Handy mit eurem Sync-Passwort verschlüsselt (AES-256) – GitHub sieht nur unlesbare Daten.</p>
+      <form id="sync-form" novalidate autocomplete="off">
+        <label class="field-label" for="sync-repo">Privates Repository <span class="field-hint">(besitzer/name)</span></label>
+        <input id="sync-repo" class="input" type="text" maxlength="140" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="lukasnews/moodtracker-data">
+        <label class="field-label" for="sync-token">GitHub-Token</label>
+        <input id="sync-token" class="input" type="password" maxlength="255" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+        <label class="field-label" for="sync-pass">Gemeinsames Sync-Passwort <span class="field-hint">(auf beiden Handys gleich, mind. 8 Zeichen)</span></label>
+        <input id="sync-pass" class="input" type="password" maxlength="200" autocomplete="new-password" spellcheck="false">
+        <p class="muted small" style="margin:.5rem 0 0">Ohne dieses Passwort sind die Daten nicht lesbar – es kann nicht wiederhergestellt werden.</p>
+        <p class="field-error" id="sync-error" role="alert" hidden></p>
+        <div class="btn-row" style="margin-top:1rem">
+          <button type="submit" class="btn btn-primary">Speichern &amp; synchronisieren</button>
+          <button type="button" class="btn" id="sync-now-btn">Jetzt synchronisieren</button>
+          <button type="button" class="btn-link" id="sync-clear-btn">Sync entfernen</button>
+        </div>
+      </form>
+      <p class="sync-status" id="sync-status" aria-live="polite"></p>
     </div>
 
     <div class="card settings-card">
@@ -982,7 +1008,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
 </main>
 
 <footer class="app-footer container">
-  <p>Our Mood · läuft komplett lokal in deinem Browser</p>
+  <p>Our Mood · <span id="footer-sync">läuft lokal in deinem Browser</span></p>
 </footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1229,7 +1255,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       settings: { names: { ...DEFAULT_NAMES }, cycle: { A: false, B: false }, solo: false },
       entries: [],
       wishes: [],
-      signals: { A: null, B: null }
+      signals: { A: null, B: null },
+      deleted: { entries: {}, wishes: {} } // Lösch-Markierungen, damit Löschungen beim Sync übertragen werden
     };
   }
 
@@ -1314,14 +1341,34 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       addedBy: raw.addedBy,
       done: raw.done === true,
       createdAt: validTime(raw.createdAt) ? raw.createdAt : nowIso,
-      doneAt: raw.done === true && validTime(raw.doneAt) ? raw.doneAt : ''
+      doneAt: raw.done === true && validTime(raw.doneAt) ? raw.doneAt : '',
+      updatedAt: validTime(raw.updatedAt) ? raw.updatedAt
+        : (raw.done === true && validTime(raw.doneAt) ? raw.doneAt : (validTime(raw.createdAt) ? raw.createdAt : nowIso))
     };
   }
 
   /** Lust-Signal: gilt nur für den Tag, an dem es gesetzt wurde. */
   function normalizeSignal(raw) {
     if (!raw || typeof raw !== 'object' || !isValidIsoDate(raw.date)) return null;
-    return { date: raw.date, note: cleanText(raw.note, MAX_SIGNAL_LENGTH) };
+    const validTime = v => typeof v === 'string' && v.length < 40 && !isNaN(new Date(v).getTime());
+    return {
+      date: raw.date,
+      note: cleanText(raw.note, MAX_SIGNAL_LENGTH),
+      setAt: validTime(raw.setAt) ? raw.setAt : raw.date + 'T00:00:00.000Z',
+      withdrawn: raw.withdrawn === true
+    };
+  }
+
+  /** Lösch-Markierungen { id: Zeitpunkt } prüfen. */
+  function normalizeTombstones(raw) {
+    const out = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    let count = 0;
+    for (const [id, time] of Object.entries(raw)) {
+      if (count++ > 20000) break;
+      if (/^[A-Za-z0-9_-]{1,64}$/.test(id) && typeof time === 'string' && time.length < 40 && !isNaN(new Date(time).getTime())) out[id] = time;
+    }
+    return out;
   }
 
   /**
@@ -1335,6 +1382,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     let signalsRaw = {};
     let cycleRaw = {};
     let soloRaw = false;
+    let deletedRaw = {};
+    let settingsUpdatedAt = '';
     if (Array.isArray(raw)) {
       entriesRaw = raw;
     } else if (raw && typeof raw === 'object' && Array.isArray(raw.entries)) {
@@ -1342,6 +1391,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       namesRaw = raw.settings && raw.settings.names;
       if (Array.isArray(raw.wishes)) wishesRaw = raw.wishes;
       if (raw.signals && typeof raw.signals === 'object') signalsRaw = raw.signals;
+      if (raw.deleted && typeof raw.deleted === 'object') deletedRaw = raw.deleted;
+      if (raw.settings && typeof raw.settings.updatedAt === 'string' && raw.settings.updatedAt.length < 40 && !isNaN(new Date(raw.settings.updatedAt).getTime())) settingsUpdatedAt = raw.settings.updatedAt;
       if (raw.settings && raw.settings.cycle && typeof raw.settings.cycle === 'object') cycleRaw = raw.settings.cycle;
       // Gilt für beide gleich. Ältere Daten (pro Person) → eingeschaltet, wenn es bei einer Person an war.
       if (raw.settings && raw.settings.solo === true) soloRaw = true;
@@ -1366,11 +1417,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         settings: {
           names: normalizeNames(namesRaw),
           cycle: { A: cycleRaw.A === true, B: cycleRaw.B === true },
-          solo: soloRaw
+          solo: soloRaw,
+          updatedAt: settingsUpdatedAt
         },
         entries,
         wishes: wishesRaw.map(normalizeWish).filter(Boolean),
-        signals: { A: normalizeSignal(signalsRaw.A), B: normalizeSignal(signalsRaw.B) }
+        signals: { A: normalizeSignal(signalsRaw.A), B: normalizeSignal(signalsRaw.B) },
+        deleted: { entries: normalizeTombstones(deletedRaw.entries), wishes: normalizeTombstones(deletedRaw.wishes) }
       },
       validCount: entries.length,
       invalidCount,
@@ -1402,7 +1455,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   }
 
   /** Schreibt alle Daten. Gibt false zurück, wenn das Speichern fehlschlägt. */
-  function persist() {
+  /** Speichert lokal, ohne einen Sync anzustoßen (wird vom Sync selbst benutzt). */
+  function persistLocal() {
     if (!storageAvailable) return false;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
@@ -1411,6 +1465,16 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       return false;
     }
   }
+
+  /** Speichert lokal und gleicht – falls eingerichtet – kurz danach mit dem anderen Handy ab. */
+  function persist() {
+    const ok = persistLocal();
+    if (ok && typeof scheduleSync === 'function') scheduleSync();
+    return ok;
+  }
+
+  /** Markiert Einstellungen als geändert (für den Sync: die neuere Version gewinnt). */
+  const touchSettings = () => { appData.settings.updatedAt = new Date().toISOString(); };
 
   function showStorageWarning(text) {
     const box = $('#storage-warning');
@@ -2034,7 +2098,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   const otherProfile = p => (p === 'A' ? 'B' : 'A');
   const activeSignal = p => {
     const sig = appData.signals[p];
-    return sig && sig.date === todayIso() ? sig : null;
+    return sig && !sig.withdrawn && sig.date === todayIso() ? sig : null;
   };
 
   function renderSignals() {
@@ -2193,12 +2257,379 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     toast('Push entfernt.');
   }
 
+  /* ==========================================================
+     Sync zwischen Geräten über ein privates GitHub-Repository
+     - Alle Daten werden im Browser mit AES-256-GCM verschlüsselt (Schlüssel aus dem
+       gemeinsamen Sync-Passwort via PBKDF2). GitHub speichert nur Chiffretext.
+     - Zusammenführen: pro Eintrag gewinnt die neuere Änderung; Löschungen werden über
+       Lösch-Markierungen übertragen.
+     - Zugangsdaten liegen nur in diesem Browser (eigener Schlüssel, nie im Export).
+     ========================================================== */
+  const SYNC_KEY = 'ourMood.sync.v1';
+  const SYNC_FILE = 'our-mood-data.enc.json';
+  const GITHUB_API = 'https://api.github.com';
+  const REPO_PATTERN = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
+  const PBKDF2_ITERATIONS = 310000;
+  const emptySyncConfig = () => ({ repo: '', token: '', passphrase: '', lastSync: '' });
+
+  function loadSyncConfig() {
+    try {
+      const raw = JSON.parse(window.localStorage.getItem(SYNC_KEY) || 'null');
+      if (!raw || typeof raw !== 'object') return emptySyncConfig();
+      return {
+        repo: typeof raw.repo === 'string' && REPO_PATTERN.test(raw.repo) ? raw.repo : '',
+        token: typeof raw.token === 'string' ? raw.token.slice(0, 255) : '',
+        passphrase: typeof raw.passphrase === 'string' ? raw.passphrase.slice(0, 200) : '',
+        lastSync: typeof raw.lastSync === 'string' ? raw.lastSync : ''
+      };
+    } catch (err) {
+      return emptySyncConfig();
+    }
+  }
+  function saveSyncConfig() {
+    try { window.localStorage.setItem(SYNC_KEY, JSON.stringify(syncConfig)); return true; } catch (err) { return false; }
+  }
+  let syncConfig = loadSyncConfig();
+  const cryptoAvailable = () => !!(window.crypto && window.crypto.subtle);
+  function syncReady() {
+    return !!(syncConfig && syncConfig.repo && syncConfig.token && syncConfig.passphrase && cryptoAvailable());
+  }
+
+  class SyncError extends Error {
+    constructor(code, status) { super(code); this.code = code; this.status = status || 0; }
+  }
+  function syncErrorText(err) {
+    const status = err && err.status;
+    switch (err && err.code) {
+      case 'passphrase': return 'Die Daten im Repository lassen sich nicht entschlüsseln – ist das Sync-Passwort auf beiden Handys gleich?';
+      case 'format': return 'Die Sync-Datei im Repository hat ein unbekanntes Format. Es wurde nichts überschrieben.';
+      case 'conflict': return 'Gleichzeitige Änderungen – bitte gleich noch einmal synchronisieren.';
+      case 'network': return 'Keine Verbindung zu GitHub. Bitte Internetverbindung prüfen.';
+      case 'nocrypto': return 'Dieser Browser unterstützt die nötige Verschlüsselung nicht (nur über https möglich).';
+      case 'http':
+        if (status === 401) return 'GitHub-Token ungültig oder abgelaufen (401).';
+        if (status === 403) return 'Keine Berechtigung (403). Das Token braucht „Contents: Read and write“ für dieses Repository – oder das Limit ist erreicht.';
+        if (status === 404) return 'Repository nicht gefunden (404). Name prüfen – und ob das Token Zugriff auf dieses Repository hat.';
+        return `GitHub-Fehler (HTTP ${status}).`;
+      default: return 'Synchronisieren fehlgeschlagen.';
+    }
+  }
+
+  /* ---------- Base64 & Verschlüsselung ---------- */
+  function bytesToBase64(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(binary);
+  }
+  function base64ToBytes(b64) {
+    const binary = atob(String(b64).replace(/\s/g, ''));
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+    return out;
+  }
+  async function gzip(bytes) {
+    if (typeof CompressionStream === 'undefined') return { bytes, gz: false };
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+    return { bytes: new Uint8Array(await new Response(stream).arrayBuffer()), gz: true };
+  }
+  async function gunzip(bytes) {
+    if (typeof DecompressionStream === 'undefined') throw new SyncError('nocrypto');
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+
+  const keyCache = new Map();
+  async function deriveKey(passphrase, saltB64, iterations) {
+    const cacheId = `${saltB64}|${iterations}|${passphrase}`;
+    if (keyCache.has(cacheId)) return keyCache.get(cacheId);
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: base64ToBytes(saltB64), iterations, hash: 'SHA-256' },
+      base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    keyCache.clear(); // nur den aktuellen Schlüssel im Speicher halten
+    keyCache.set(cacheId, key);
+    return key;
+  }
+
+  async function encryptData(data, existingSalt, existingIterations) {
+    const salt = existingSalt || bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
+    const iterations = existingIterations || PBKDF2_ITERATIONS;
+    const key = await deriveKey(syncConfig.passphrase, salt, iterations);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const packed = await gzip(new TextEncoder().encode(JSON.stringify(data)));
+    const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, packed.bytes));
+    return { app: 'Our Mood', v: 1, kdf: 'PBKDF2-SHA256', iter: iterations, salt, iv: bytesToBase64(iv), gz: packed.gz, ct: bytesToBase64(cipher) };
+  }
+
+  async function decryptData(envelope) {
+    if (!envelope || envelope.app !== 'Our Mood' || envelope.v !== 1 || typeof envelope.salt !== 'string' ||
+        typeof envelope.iv !== 'string' || typeof envelope.ct !== 'string' ||
+        !Number.isInteger(envelope.iter) || envelope.iter < 100000 || envelope.iter > 5000000) {
+      throw new SyncError('format');
+    }
+    const key = await deriveKey(syncConfig.passphrase, envelope.salt, envelope.iter);
+    let plain;
+    try {
+      plain = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: base64ToBytes(envelope.iv) }, key, base64ToBytes(envelope.ct)));
+    } catch (err) {
+      throw new SyncError('passphrase');
+    }
+    if (envelope.gz) plain = await gunzip(plain);
+    try { return JSON.parse(new TextDecoder().decode(plain)); } catch (err) { throw new SyncError('format'); }
+  }
+
+  /* ---------- GitHub-API ---------- */
+  const ghHeaders = () => ({
+    'Authorization': 'Bearer ' + syncConfig.token,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  });
+  async function ghFetch(url, options = {}) {
+    try {
+      return await fetch(url, { ...options, headers: { ...ghHeaders(), ...(options.headers || {}) }, cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' });
+    } catch (err) {
+      throw new SyncError('network');
+    }
+  }
+  const contentsUrl = () => `${GITHUB_API}/repos/${syncConfig.repo}/contents/${SYNC_FILE}`;
+
+  /** Liest die verschlüsselte Datei. Rückgabe { exists, sha, envelope }. */
+  async function ghRead() {
+    const res = await ghFetch(contentsUrl());
+    if (res.status === 404) {
+      // Datei fehlt – oder Repository nicht erreichbar? Repository prüfen.
+      const repoRes = await ghFetch(`${GITHUB_API}/repos/${syncConfig.repo}`);
+      if (!repoRes.ok) throw new SyncError('http', repoRes.status);
+      return { exists: false };
+    }
+    if (!res.ok) throw new SyncError('http', res.status);
+    const json = await res.json();
+    let base64 = json.content;
+    if (!base64 && json.sha) {
+      // Dateien > 1 MB liefert die Contents-API ohne Inhalt → über die Blob-API laden
+      const blobRes = await ghFetch(`${GITHUB_API}/repos/${syncConfig.repo}/git/blobs/${json.sha}`);
+      if (!blobRes.ok) throw new SyncError('http', blobRes.status);
+      base64 = (await blobRes.json()).content;
+    }
+    let envelope;
+    try { envelope = JSON.parse(new TextDecoder().decode(base64ToBytes(base64 || ''))); } catch (err) { throw new SyncError('format'); }
+    return { exists: true, sha: json.sha, envelope };
+  }
+
+  /** Schreibt die Datei. Rückgabe { conflict: true } bei gleichzeitiger Änderung. */
+  async function ghWrite(envelope, sha) {
+    const body = {
+      message: 'Our Mood Sync',
+      content: bytesToBase64(new TextEncoder().encode(JSON.stringify(envelope)))
+    };
+    if (sha) body.sha = sha;
+    const res = await ghFetch(contentsUrl(), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.status === 409 || res.status === 422) return { conflict: true };
+    if (!res.ok) throw new SyncError('http', res.status);
+    return { conflict: false };
+  }
+
+  /* ---------- Zusammenführen ---------- */
+  function mergeTombstones(a, b) {
+    const out = { ...a };
+    for (const [id, time] of Object.entries(b || {})) if (!out[id] || time > out[id]) out[id] = time;
+    return out;
+  }
+  function mergeById(listA, listB, tombstones) {
+    const byId = new Map();
+    for (const item of listA.concat(listB)) {
+      const current = byId.get(item.id);
+      if (!current || (item.updatedAt || '') > (current.updatedAt || '')) byId.set(item.id, item);
+    }
+    return Array.from(byId.values()).filter(item => !(tombstones[item.id] && tombstones[item.id] >= (item.updatedAt || '')));
+  }
+  function mergeData(local, remote) {
+    const deleted = {
+      entries: mergeTombstones(local.deleted.entries, remote.deleted.entries),
+      wishes: mergeTombstones(local.deleted.wishes, remote.deleted.wishes)
+    };
+    const signals = {};
+    for (const p of PROFILES) {
+      const a = local.signals[p];
+      const b = remote.signals[p];
+      signals[p] = !a ? b : !b ? a : ((b.setAt || '') > (a.setAt || '') ? b : a);
+    }
+    return {
+      version: DATA_VERSION,
+      settings: (remote.settings.updatedAt || '') > (local.settings.updatedAt || '') ? remote.settings : local.settings,
+      entries: mergeById(local.entries, remote.entries, deleted.entries),
+      wishes: mergeById(local.wishes, remote.wishes, deleted.wishes),
+      signals,
+      deleted
+    };
+  }
+  /** Reihenfolge-unabhängiger Vergleichsschlüssel, um Änderungen zu erkennen. */
+  function canonical(data) {
+    const sortObj = obj => Object.keys(obj).sort().map(k => [k, obj[k]]);
+    const byId = list => list.slice().sort((a, b) => a.id.localeCompare(b.id));
+    return JSON.stringify([
+      data.settings, byId(data.entries), byId(data.wishes), data.signals,
+      sortObj(data.deleted.entries), sortObj(data.deleted.wishes)
+    ]);
+  }
+
+  /* ---------- Ablauf ---------- */
+  let syncTimer = null;
+  let syncRunning = false;
+  let syncQueued = false;
+  let lastSyncErrorShown = '';
+
+  function setSyncStatus(text, state) {
+    const node = $('#sync-status');
+    node.textContent = text;
+    node.className = 'sync-status' + (state ? ' ' + state : '');
+    const footer = $('#footer-sync');
+    if (!syncReady()) footer.textContent = 'läuft lokal in deinem Browser';
+    else if (state === 'error') footer.textContent = 'Sync-Problem – siehe Einstellungen';
+    else footer.textContent = text;
+  }
+  function describeLastSync() {
+    if (!syncReady()) return 'Sync ist nicht eingerichtet – Daten liegen nur auf diesem Gerät.';
+    if (!syncConfig.lastSync) return 'Sync eingerichtet, noch nicht abgeglichen.';
+    const d = new Date(syncConfig.lastSync);
+    return 'Synchronisiert ' + d.toLocaleString('de-DE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' Uhr';
+  }
+
+  function scheduleSync(delay = 1500) {
+    if (!syncReady()) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => { runSync(); }, delay);
+  }
+
+  /** Nach Daten vom anderen Handy: sichtbare Ansichten aktualisieren (Formular bleibt unberührt). */
+  function refreshAfterRemoteChange() {
+    renderNames();
+    if (activeProfile) renderSignals();
+    if (!editingId) { updateCycleVisibility(); updateSoloVisibility(); }
+    if (currentView === 'history') renderHistory();
+    if (currentView === 'stats') renderStats();
+    if (currentView === 'wishes') renderWishes();
+  }
+
+  async function runSync({ manual = false } = {}) {
+    if (!syncReady()) return { ok: false };
+    if (syncRunning) { syncQueued = true; return { ok: true, queued: true }; }
+    syncRunning = true;
+    setSyncStatus('Synchronisiere …', '');
+    try {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const remote = await ghRead();
+        let remoteData = null;
+        if (remote.exists) {
+          const plain = await decryptData(remote.envelope);
+          const normalized = normalizeData(plain);
+          if (!normalized.ok) throw new SyncError('format');
+          remoteData = normalized.data;
+        }
+        const before = canonical(appData);
+        const merged = remoteData ? mergeData(appData, remoteData) : appData;
+        const mergedKey = canonical(merged);
+        if (mergedKey !== before) {
+          appData = merged;
+          persistLocal();
+          refreshAfterRemoteChange();
+        }
+        if (!remoteData || canonical(remoteData) !== mergedKey) {
+          const envelope = await encryptData(merged, remote.exists ? remote.envelope.salt : '', remote.exists ? remote.envelope.iter : 0);
+          const write = await ghWrite(envelope, remote.exists ? remote.sha : '');
+          if (write.conflict) continue; // anderes Handy war schneller → neu lesen & zusammenführen
+        }
+        syncConfig.lastSync = new Date().toISOString();
+        saveSyncConfig();
+        lastSyncErrorShown = '';
+        setSyncStatus(describeLastSync(), 'ok');
+        return { ok: true };
+      }
+      throw new SyncError('conflict');
+    } catch (err) {
+      const error = err instanceof SyncError ? err : new SyncError('unknown');
+      const text = syncErrorText(error);
+      setSyncStatus(text, 'error');
+      if (manual) showInfo('Sync fehlgeschlagen', text);
+      else if (lastSyncErrorShown !== text) { lastSyncErrorShown = text; toast('Sync: ' + text); }
+      return { ok: false, error };
+    } finally {
+      syncRunning = false;
+      if (syncQueued) { syncQueued = false; scheduleSync(300); }
+    }
+  }
+
+  /* ---------- Einstellungen ---------- */
+  function renderSyncSettings() {
+    $('#sync-repo').value = syncConfig.repo;
+    $('#sync-token').value = syncConfig.token;
+    $('#sync-pass').value = syncConfig.passphrase;
+    $('#sync-error').hidden = true;
+    setSyncStatus(describeLastSync(), syncReady() ? (syncConfig.lastSync ? 'ok' : '') : '');
+  }
+  function showSyncError(text) {
+    const node = $('#sync-error');
+    node.textContent = text;
+    node.hidden = !text;
+  }
+
+  async function saveSyncSettings(event) {
+    event.preventDefault();
+    if (!cryptoAvailable()) { showSyncError(syncErrorText(new SyncError('nocrypto'))); return; }
+    const repo = $('#sync-repo').value.trim().replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+    const token = $('#sync-token').value.trim();
+    const passphrase = $('#sync-pass').value;
+    let error = '';
+    if (!REPO_PATTERN.test(repo)) error = 'Bitte das Repository als „besitzer/name“ angeben, z. B. lukasnews/moodtracker-data.';
+    else if (!token || /\s/.test(token)) error = 'Bitte ein gültiges GitHub-Token eingeben (ohne Leerzeichen).';
+    else if (passphrase.length < 8) error = 'Das Sync-Passwort braucht mindestens 8 Zeichen.';
+    if (error) { showSyncError(error); return; }
+    showSyncError('');
+
+    const previous = { ...syncConfig };
+    syncConfig = { repo, token, passphrase, lastSync: previous.repo === repo && previous.passphrase === passphrase ? previous.lastSync : '' };
+
+    // Sicherheitsprüfung: Repository sollte privat sein
+    try {
+      const res = await ghFetch(`${GITHUB_API}/repos/${repo}`);
+      if (!res.ok) throw new SyncError('http', res.status);
+      const info = await res.json();
+      if (info.private !== true) {
+        const goOn = await confirmAction('Repository ist öffentlich',
+          ['Dieses Repository ist öffentlich. Die Daten wären zwar verschlüsselt, aber jeder könnte die verschlüsselte Datei herunterladen.',
+            'Empfehlung: ein privates Repository verwenden.'],
+          'Trotzdem verwenden', { danger: true });
+        if (!goOn) { syncConfig = previous; return; }
+      }
+    } catch (err) {
+      syncConfig = previous;
+      showSyncError(syncErrorText(err instanceof SyncError ? err : new SyncError('unknown')));
+      return;
+    }
+    if (!saveSyncConfig()) { syncConfig = previous; showSyncError('Die Einstellungen konnten nicht gespeichert werden.'); return; }
+    const result = await runSync({ manual: true });
+    if (result.ok) toast('Sync eingerichtet ✓');
+  }
+
+  async function clearSyncSettings() {
+    const ok = await confirmAction('Sync entfernen?',
+      'Repository, Token und Sync-Passwort werden aus diesem Browser gelöscht. Die Daten auf diesem Gerät, im Repository und auf dem anderen Handy bleiben erhalten.',
+      'Entfernen', { danger: true });
+    if (!ok) return;
+    try { window.localStorage.removeItem(SYNC_KEY); } catch (err) { /* ignorieren */ }
+    syncConfig = emptySyncConfig();
+    clearTimeout(syncTimer);
+    keyCache.clear();
+    renderSyncSettings();
+    toast('Sync entfernt.');
+  }
+
   async function toggleSignal() {
     if (!activeProfile) return;
     const profile = activeProfile;
     const previous = appData.signals[profile];
     if (activeSignal(profile)) {
-      appData.signals[profile] = null;
+      appData.signals[profile] = { ...appData.signals[profile], withdrawn: true, setAt: new Date().toISOString() };
     } else {
       const res = await openDialog({
         title: 'Lust-Signal senden',
@@ -2215,7 +2646,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         ]
       });
       if (res.action !== 'send' || activeProfile !== profile) return;
-      appData.signals[profile] = { date: todayIso(), note: cleanText(res.input, MAX_SIGNAL_LENGTH) };
+      appData.signals[profile] = { date: todayIso(), note: cleanText(res.input, MAX_SIGNAL_LENGTH), setAt: new Date().toISOString(), withdrawn: false };
     }
     if (!persist()) {
       appData.signals[profile] = previous;
@@ -2223,7 +2654,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       return;
     }
     renderSignals();
-    const sig = appData.signals[profile];
+    const sig = activeSignal(profile);
     const partner = otherProfile(profile);
     if (!sig) { toast('Signal zurückgenommen.'); return; }
     if (!pushReadyFor(partner)) { toast('Lust-Signal gesetzt ✨'); return; }
@@ -2312,9 +2743,10 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   function toggleWish(id) {
     const wish = appData.wishes.find(w => w.id === id);
     if (!wish) return;
-    const before = { done: wish.done, doneAt: wish.doneAt };
+    const before = { done: wish.done, doneAt: wish.doneAt, updatedAt: wish.updatedAt };
     wish.done = !wish.done;
     wish.doneAt = wish.done ? new Date().toISOString() : '';
+    wish.updatedAt = new Date().toISOString();
     if (!persist()) { Object.assign(wish, before); showInfo('Speichern nicht möglich', 'Die Änderung konnte nicht gespeichert werden.'); }
     renderWishes();
     const again = document.getElementById('wish-' + id);
@@ -2328,7 +2760,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (!ok) return;
     const before = appData.wishes;
     appData.wishes = appData.wishes.filter(w => w.id !== id);
-    if (!persist()) { appData.wishes = before; showInfo('Löschen nicht möglich', 'Die Änderung konnte nicht gespeichert werden.'); return; }
+    appData.deleted.wishes[id] = new Date().toISOString();
+    if (!persist()) { appData.wishes = before; delete appData.deleted.wishes[id]; showInfo('Löschen nicht möglich', 'Die Änderung konnte nicht gespeichert werden.'); return; }
     renderWishes();
     toast('Idee gelöscht.');
     $('#wishes-title').focus();
@@ -2709,13 +3142,15 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     const entry = appData.entries.find(e => e.id === id);
     if (!entry || entry.profile !== activeProfile) return;
     const ok = await confirmAction('Eintrag löschen?',
-      `Der Eintrag vom ${formatDateLong(entry.date)} wird dauerhaft aus diesem Browser entfernt.`,
+      `Der Eintrag vom ${formatDateLong(entry.date)} wird dauerhaft entfernt${syncReady() ? ' – auch auf dem anderen Handy (Sync)' : ' aus diesem Browser'}.`,
       'Endgültig löschen', { danger: true });
     if (!ok) return;
     const before = appData.entries;
     appData.entries = appData.entries.filter(e => e.id !== id);
+    appData.deleted.entries[id] = new Date().toISOString();
     if (!persist()) {
       appData.entries = before;
+      delete appData.deleted.entries[id];
       showInfo('Löschen nicht möglich', 'Die Änderung konnte nicht gespeichert werden.');
       return;
     }
@@ -3019,6 +3454,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     for (const p of PROFILES) $(`#cycle-setting-${p}`).checked = !!appData.settings.cycle[p];
     $('#solo-setting').checked = !!appData.settings.solo;
     renderPushSettings();
+    renderSyncSettings();
     const n = appData.entries.length;
     $('#storage-summary').textContent = storageAvailable
       ? `Aktuell gespeichert: ${n === 1 ? '1 Eintrag' : n + ' Einträge'}.`
@@ -3041,6 +3477,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     }
     const previous = appData.settings.names;
     appData.settings.names = { A: nameA, B: nameB };
+    touchSettings();
     if (!persist()) {
       appData.settings.names = previous;
       showInfo('Speichern nicht möglich', 'Die Namen konnten nicht gespeichert werden.');
@@ -3127,11 +3564,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         settings: {
           names: result.hasNames ? result.data.settings.names : { ...appData.settings.names },
           cycle: result.hasNames ? result.data.settings.cycle : { ...appData.settings.cycle },
-          solo: result.hasNames ? result.data.settings.solo : appData.settings.solo
+          solo: result.hasNames ? result.data.settings.solo : appData.settings.solo,
+          updatedAt: new Date().toISOString()
         },
         entries: result.data.entries,
         wishes: result.data.wishes,
-        signals: appData.signals // Signale sind tagesaktuell und werden nicht importiert
+        signals: appData.signals, // Signale sind tagesaktuell und werden nicht importiert
+        deleted: appData.deleted
       };
     } else {
       const existingIds = new Set(appData.entries.map(e => e.id));
@@ -3165,6 +3604,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       title: 'Alle Daten löschen?',
       message: [
         'Alle Einträge beider Profile und die Namen werden dauerhaft aus diesem Browser entfernt. Das kann nicht rückgängig gemacht werden.',
+        'Ist Sync eingerichtet, wird er auf diesem Gerät ebenfalls entfernt. Die Daten im Repository und auf dem anderen Handy bleiben erhalten.',
         'Tipp: Exportiere vorher ein Backup, falls du die Daten behalten möchtest.'
       ],
       input: { label: 'Zur Bestätigung bitte LÖSCHEN eingeben' },
@@ -3178,7 +3618,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       showInfo('Nicht gelöscht', 'Die Bestätigung stimmte nicht. Es wurde nichts gelöscht.');
       return;
     }
-    try { window.localStorage.removeItem(STORAGE_KEY); window.localStorage.removeItem(PUSH_KEY); } catch (e) { /* ignorieren */ }
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(PUSH_KEY);
+      window.localStorage.removeItem(SYNC_KEY);
+    } catch (e) { /* ignorieren */ }
+    syncConfig = emptySyncConfig();
+    clearTimeout(syncTimer);
     pushConfig = { token: '', topics: { A: '', B: '' } };
     appData = defaultData();
     activeProfile = null;
@@ -3250,12 +3696,19 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   $('#names-form').addEventListener('submit', handleNamesSubmit);
   $('#signal-btn').addEventListener('click', toggleSignal);
   $('#push-form').addEventListener('submit', savePushConfig);
+  $('#sync-form').addEventListener('submit', saveSyncSettings);
+  $('#sync-now-btn').addEventListener('click', () => {
+    if (!syncReady()) { showSyncError('Bitte zuerst Repository, Token und Sync-Passwort speichern.'); return; }
+    runSync({ manual: true });
+  });
+  $('#sync-clear-btn').addEventListener('click', clearSyncSettings);
   $('#push-test-btn').addEventListener('click', testPush);
   $('#push-clear-btn').addEventListener('click', clearPushConfig);
   $('#wish-form').addEventListener('submit', addWish);
   $$('[data-cycle-profile]').forEach(box => box.addEventListener('change', () => {
     const p = box.dataset.cycleProfile;
     appData.settings.cycle[p] = box.checked;
+    touchSettings();
     if (!persist()) { appData.settings.cycle[p] = !box.checked; box.checked = !box.checked; showInfo('Speichern nicht möglich', 'Die Einstellung konnte nicht gespeichert werden.'); return; }
     if (!editingId) updateCycleVisibility();
     toast(box.checked ? `Zyklus-Frage für ${nameOf(p)} eingeschaltet.` : `Zyklus-Frage für ${nameOf(p)} ausgeschaltet.`);
@@ -3263,6 +3716,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   $('#solo-setting').addEventListener('change', event => {
     const box = event.target;
     appData.settings.solo = box.checked;
+    touchSettings();
     if (!persist()) { appData.settings.solo = !box.checked; box.checked = !box.checked; showInfo('Speichern nicht möglich', 'Die Einstellung konnte nicht gespeichert werden.'); return; }
     if (!editingId) updateSoloVisibility();
     toast(box.checked ? 'Frage für beide eingeschaltet.' : 'Frage für beide ausgeschaltet.');
@@ -3279,6 +3733,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   // Wenn die App z. B. über Nacht offen war: Datum eines unberührten Formulars auf "heute" aktualisieren
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
+    scheduleSync(200); // beim Zurückkehren in die App Neues vom anderen Handy holen
     if (!editingId && !isFormDirty() && dateInput.value !== todayIso()) {
       dateInput.value = todayIso();
       updateDateDisplay();
@@ -3296,6 +3751,10 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   renderNames();
   resetForm();
   showView('form', { focus: false });
+  setSyncStatus(describeLastSync(), syncReady() && syncConfig.lastSync ? 'ok' : '');
+  if (syncReady()) runSync();
+  // Solange die App offen und sichtbar ist, jede Minute abgleichen (z. B. für Lust-Signale)
+  setInterval(() => { if (document.visibilityState === 'visible') scheduleSync(0); }, 60000);
 })();
 </script>
 </body>

@@ -2,7 +2,7 @@
 
 *Ein Moment für uns – ohne Druck, ohne Erwartungen.*
 
-Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimmung, Nähe und Intimität festhalten könnt. Die App läuft komplett im Browser: ohne Konto, ohne Tracking. Einzige optionale Verbindung ist der Push für das Lust-Signal an euren eigenen ntfy-Server.
+Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimmung, Nähe und Intimität festhalten könnt. Die App läuft im Browser: ohne Konto, ohne Tracking. Optional könnt ihr eure Handys **verschlüsselt über ein privates GitHub-Repository synchronisieren** und Lust-Signale als Push über euren eigenen ntfy-Server senden.
 
 ## Dateien
 
@@ -44,7 +44,7 @@ Zum lokalen Ausprobieren öffnest du `index.html` einfach per Doppelklick im Bro
    - Die Einträge liegen **nur in dem Browser auf dem Gerät**, auf dem sie gespeichert wurden. Ein anderes Handy, ein anderer Browser (z. B. Safari statt Chrome) oder ein privates Fenster sieht sie nicht.
    - Wenn ihr zwei Geräte nutzt, hat jedes Gerät seine eigenen Daten. Zum Übertragen exportiert ihr auf dem einen Gerät und importiert auf dem anderen (*Zusammenführen*).
    - Werden Browserdaten bzw. Websitedaten gelöscht, sind die Einträge weg. Erstellt deshalb regelmäßig ein Backup.
-   - Lust-Signal und Wunschliste sind nur für beide sichtbar, wenn ihr **dasselbe Gerät und denselben Browser** nutzt.
+   - Ohne eingerichteten Sync sind Einträge, Lust-Signal und Wunschliste nur auf **demselben Gerät und im selben Browser** sichtbar. Mit Sync (siehe unten) seht ihr alles auf beiden Handys.
    - GitHub Pages schützt keine privaten Daten. Wer das entsperrte Gerät benutzen kann, kann die Einträge sehen. Die Backup-Datei ist unverschlüsselt.
 
 ## Eigene Domain: moods.chaoten.online
@@ -59,6 +59,30 @@ Die Datei `CNAME` im Repository enthält die Domain `moods.chaoten.online`. Dami
 3. Sobald der DNS-Check grün ist (das kann von wenigen Minuten bis zu 24 Stunden dauern), **Enforce HTTPS** aktivieren.
 
 Hinweis: Gespeicherte Einträge gehören immer zu genau einer Adresse. Einträge, die unter `…github.io/…` gespeichert wurden, sind unter `moods.chaoten.online` nicht sichtbar. Übertragen lassen sie sich über Export und Import.
+
+## Sync zwischen zwei Handys (verschlüsselt über GitHub)
+
+Damit ihr beide auf euren **eigenen Handys** dieselben Einträge, die Wunschliste und die Lust-Signale seht, gleicht die App ihre Daten über **ein privates GitHub-Repository** ab. Die Daten liegen dort als eine einzige Datei (`our-mood-data.enc.json`), die **auf dem Handy mit AES-256 verschlüsselt** wird. Der Schlüssel ist euer gemeinsames Sync-Passwort. GitHub und alle anderen sehen nur unlesbare Daten.
+
+**Einrichtung (einmalig):**
+1. **Privates Repository anlegen:** Auf GitHub **+ → New repository**, Name z. B. `moodtracker-data`, **Private** auswählen und **Create repository** klicken.
+2. **Token erstellen:** GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+   - *Repository access:* **Only select repositories** → `moodtracker-data`
+   - *Permissions → Repository permissions → Contents:* **Read and write**
+   - Ablaufdatum nach Wunsch. Danach muss das Token erneuert werden.
+3. **In Our Mood auf dem ersten Handy:** ⚙️ Einstellungen → **Sync zwischen euren Handys** öffnen.
+   - Repository `lukasnews/moodtracker-data` und das Token eintragen
+   - Ein **gemeinsames Sync-Passwort** wählen (mind. 8 Zeichen)
+   - **Speichern & synchronisieren** tippen
+4. **Auf dem zweiten Handy** dasselbe mit **demselben Sync-Passwort**. Das Token darf dasselbe sein. Vorhandene Einträge beider Handys werden zusammengeführt.
+
+**So funktioniert der Abgleich:**
+- Die App gleicht beim Öffnen ab, kurz nach jedem Speichern, beim Zurückkehren in die App und jede Minute, solange sie offen ist.
+- Bei gleichzeitigen Änderungen gewinnt pro Eintrag die neuere Änderung. Löschungen werden übertragen.
+- Die Daten bleiben zusätzlich lokal auf jedem Handy. Ohne Internet funktioniert die App weiter und gleicht später ab.
+- Token und Sync-Passwort werden nur im Browser des Geräts gespeichert, nie im Backup-Export und nie im öffentlichen App-Repository.
+- **Sync-Passwort vergessen = die Datei im Repository ist nicht mehr lesbar.** Die lokalen Daten auf den Handys bleiben erhalten.
+- GitHub versioniert jede Änderung. Ältere Stände lassen sich so notfalls wiederherstellen.
 
 ## Lust-Signal als Push aufs andere Handy (ntfy)
 
@@ -76,6 +100,6 @@ Die App kann das Lust-Signal über euren eigenen ntfy-Server **ntfy.chaoten.onli
 
 ## Datenschutz & Sicherheit
 
-- Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy erlaubt Netzwerkverbindungen nur zum eigenen ntfy-Server (`connect-src https://ntfy.chaoten.online`), und das auch nur für das optionale Push-Signal.
+- Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy erlaubt Netzwerkverbindungen nur zum eigenen ntfy-Server (Push) und zur GitHub-API (verschlüsselter Sync): `connect-src https://ntfy.chaoten.online https://api.github.com`.
 - Nutzereingaben werden nur als Text (`textContent`) angezeigt, nie als HTML. `eval` wird nicht verwendet.
 - Importierte Dateien werden nur mit `JSON.parse` gelesen und feldweise geprüft. Unbekannte Felder und ungültige Einträge werden verworfen.
