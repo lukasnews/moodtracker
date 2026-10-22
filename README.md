@@ -77,6 +77,8 @@ Damit ihr beide auf euren **eigenen Handys** dieselben Einträge, die Wunschlist
    - **Speichern & synchronisieren** tippen
 4. **Auf dem zweiten Handy** dasselbe mit **demselben Sync-Passwort**. Das Token darf dasselbe sein. Vorhandene Einträge beider Handys werden zusammengeführt.
 
+**Weiteres Gerät verbinden (Laptop, Tablet, neues Handy):** Auf einem Gerät mit funktionierendem Sync unter ⚙️ → Sync → **„Einrichtungs-Link teilen“** tippen und den Link an dich selbst schicken (Messenger, Mail, AirDrop). Auf dem neuen Gerät den Link öffnen und **nur das Sync-Passwort** eingeben. Repository und Token stecken verschlüsselt im Link, ohne Passwort ist er wertlos. Der Link-Inhalt steht hinter `#`, wird also nicht an den Server gesendet und nach dem Öffnen sofort aus der Adresszeile entfernt.
+
 **So funktioniert der Abgleich:**
 - Die App gleicht beim Öffnen ab, kurz nach jedem Speichern, beim Zurückkehren in die App und jede Minute, solange sie offen ist.
 - Bei gleichzeitigen Änderungen gewinnt pro Eintrag die neuere Änderung. Löschungen werden übertragen.

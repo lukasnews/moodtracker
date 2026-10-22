@@ -950,6 +950,15 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       </form>
       <p class="sync-status" id="sync-status" aria-live="polite"></p>
 
+      <div id="sync-connect" class="pw-change" hidden>
+        <h3>Weiteres Gerät verbinden</h3>
+        <p class="muted small">Erstellt einen Einrichtungs-Link für Laptop, Tablet oder ein neues Handy. Repository und Token stecken darin – verschlüsselt mit eurem Sync-Passwort. Auf dem neuen Gerät den Link öffnen und nur noch das Sync-Passwort eingeben.</p>
+        <div class="btn-row">
+          <button type="button" class="btn" id="sync-share-btn">Einrichtungs-Link teilen</button>
+          <button type="button" class="btn" id="sync-copy-btn">Link kopieren</button>
+        </div>
+      </div>
+
       <div id="sync-pw-change" class="pw-change" hidden>
         <h3>Sync-Passwort ändern</h3>
         <p class="muted small">Die Daten im Repository werden mit dem neuen Passwort neu verschlüsselt. Danach auf dem anderen Handy das neue Passwort eintragen und „Speichern &amp; synchronisieren“ tippen.</p>
@@ -1582,6 +1591,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       const inputField = $('#dialog-input');
       inputWrap.hidden = !input;
       inputField.value = '';
+      inputField.type = input && input.type === 'password' ? 'password' : 'text';
+      inputField.autocomplete = input && input.type === 'password' ? 'current-password' : 'off';
       if (input) $('#dialog-input-label').textContent = input.label;
 
       let focusTarget = null;
@@ -2420,13 +2431,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     return { app: 'Our Mood', v: 1, kdf: 'PBKDF2-SHA256', iter: iterations, salt, iv: bytesToBase64(iv), gz: packed.gz, ct: bytesToBase64(cipher) };
   }
 
-  async function decryptData(envelope) {
+  async function decryptData(envelope, passphrase = syncConfig.passphrase) {
     if (!envelope || envelope.app !== 'Our Mood' || envelope.v !== 1 || typeof envelope.salt !== 'string' ||
         typeof envelope.iv !== 'string' || typeof envelope.ct !== 'string' ||
         !Number.isInteger(envelope.iter) || envelope.iter < 100000 || envelope.iter > 5000000) {
       throw new SyncError('format');
     }
-    const key = await deriveKey(syncConfig.passphrase, envelope.salt, envelope.iter);
+    const key = await deriveKey(passphrase, envelope.salt, envelope.iter);
     let plain;
     try {
       plain = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: base64ToBytes(envelope.iv) }, key, base64ToBytes(envelope.ct)));
@@ -2546,6 +2557,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     badge.textContent = !syncReady() ? 'aus' : state === 'error' ? 'Problem' : 'aktiv';
     badge.className = 'badge' + (!syncReady() ? '' : state === 'error' ? ' warn' : ' on');
     $('#sync-pw-change').hidden = !syncReady();
+    $('#sync-connect').hidden = !syncReady();
     const footer = $('#footer-sync');
     if (!syncReady()) footer.textContent = 'läuft lokal in deinem Browser';
     else if (state === 'error') footer.textContent = 'Sync-Problem – siehe Einstellungen';
@@ -2744,6 +2756,98 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       syncRunning = false;
       btn.disabled = false;
     }
+  }
+
+  /* ---------- Weiteres Gerät verbinden (Einrichtungs-Link) ----------
+     Der Link enthält { repo, token } – verschlüsselt mit dem Sync-Passwort – im URL-Fragment (#connect=…).
+     Das Fragment wird nie an einen Server gesendet und nach dem Öffnen sofort aus der Adresszeile entfernt. */
+  const toBase64Url = text => bytesToBase64(new TextEncoder().encode(text)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const fromBase64Url = text => {
+    const b64 = text.replace(/-/g, '+').replace(/_/g, '/');
+    return new TextDecoder().decode(base64ToBytes(b64 + '='.repeat((4 - b64.length % 4) % 4)));
+  };
+
+  async function createConnectLink() {
+    if (!syncReady()) return '';
+    const envelope = await encryptData({ repo: syncConfig.repo, token: syncConfig.token }, '', PBKDF2_ITERATIONS, syncConfig.passphrase);
+    const base = /^https?:/.test(window.location.href) ? window.location.origin + window.location.pathname : 'https://moods.chaoten.online/';
+    return `${base}#connect=${toBase64Url(JSON.stringify(envelope))}`;
+  }
+
+  async function shareConnectLink() {
+    const link = await createConnectLink();
+    if (!link) return;
+    const text = 'Our Mood – Einrichtungs-Link (funktioniert nur mit dem Sync-Passwort)';
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Our Mood verbinden', text, url: link }); return; }
+      catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    await copyConnectLink(link);
+  }
+
+  async function copyConnectLink(prepared) {
+    const link = typeof prepared === 'string' ? prepared : await createConnectLink();
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast('Einrichtungs-Link kopiert.');
+    } catch (err) {
+      // Fallback: Link zum manuellen Kopieren anzeigen
+      openDialog({
+        title: 'Einrichtungs-Link',
+        message: ['Bitte diesen Link kopieren und auf dem neuen Gerät öffnen:', link],
+        buttons: [{ label: 'Fertig', value: 'ok', variant: 'primary', autofocus: true }]
+      });
+    }
+  }
+
+  /** Beim Start: #connect=… einlösen. */
+  async function handleConnectLink() {
+    const match = /^#connect=([A-Za-z0-9_-]{20,8000})$/.exec(window.location.hash);
+    if (!match) return;
+    // Link sofort aus Adresszeile & Verlauf entfernen
+    try { history.replaceState(null, '', window.location.pathname + window.location.search); } catch (err) { /* ignorieren */ }
+    let envelope;
+    try { envelope = JSON.parse(fromBase64Url(match[1])); } catch (err) {
+      showInfo('Link ungültig', 'Der Einrichtungs-Link ist unvollständig oder beschädigt. Bitte neu erstellen.');
+      return;
+    }
+    if (!cryptoAvailable()) { showInfo('Nicht möglich', syncErrorText(new SyncError('nocrypto'))); return; }
+    if (syncReady()) {
+      const replace = await confirmAction('Sync ersetzen?', 'Auf diesem Gerät ist bereits ein Sync eingerichtet. Mit dem Link ersetzen?', 'Ersetzen');
+      if (!replace) return;
+    }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await openDialog({
+        title: 'Gerät verbinden',
+        message: [attempt ? 'Das Passwort passt nicht. Bitte noch einmal versuchen.' : 'Gib euer Sync-Passwort ein, um dieses Gerät mit euren Handys zu verbinden.'],
+        input: { label: 'Sync-Passwort', type: 'password' },
+        buttons: [{ label: 'Abbrechen', value: 'cancel' }, { label: 'Verbinden', value: 'connect', variant: 'primary' }]
+      });
+      if (res.action !== 'connect') return;
+      let payload;
+      try {
+        payload = await decryptData(envelope, res.input);
+      } catch (err) {
+        if (err instanceof SyncError && err.code === 'passphrase') continue;
+        showInfo('Link ungültig', 'Der Einrichtungs-Link konnte nicht gelesen werden. Bitte neu erstellen.');
+        return;
+      }
+      if (!payload || typeof payload.repo !== 'string' || !REPO_PATTERN.test(payload.repo) || typeof payload.token !== 'string' || !payload.token) {
+        showInfo('Link ungültig', 'Der Einrichtungs-Link enthält keine gültigen Zugangsdaten.');
+        return;
+      }
+      syncConfig = { repo: payload.repo, token: payload.token.slice(0, 255), passphrase: res.input, lastSync: '' };
+      if (!saveSyncConfig()) { showInfo('Speichern nicht möglich', 'Die Sync-Einstellungen konnten nicht gespeichert werden.'); return; }
+      keyCache.clear();
+      const result = await runSync({ manual: true });
+      if (result.ok) {
+        renderNames();
+        showInfo('Verbunden ✓', 'Dieses Gerät ist jetzt mit euren Handys verbunden. Wähle oben dein Profil, um loszulegen.');
+      }
+      return;
+    }
+    showInfo('Nicht verbunden', 'Das Sync-Passwort war dreimal falsch. Öffne den Link erneut, um es noch einmal zu versuchen.');
   }
 
   async function clearSyncSettings() {
@@ -3861,6 +3965,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   });
   $('#sync-clear-btn').addEventListener('click', clearSyncSettings);
   $('#sync-pw-form').addEventListener('submit', changeSyncPassword);
+  $('#sync-share-btn').addEventListener('click', shareConnectLink);
+  $('#sync-copy-btn').addEventListener('click', () => copyConnectLink());
   $('#push-test-btn').addEventListener('click', testPush);
   $('#push-clear-btn').addEventListener('click', clearPushConfig);
   $('#wish-form').addEventListener('submit', addWish);
@@ -3911,7 +4017,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   resetForm();
   showView('form', { focus: false });
   setSyncStatus(describeLastSync(), syncReady() && syncConfig.lastSync ? 'ok' : '');
-  if (syncReady()) runSync();
+  if (/^#connect=/.test(window.location.hash)) handleConnectLink();
+  else if (syncReady()) runSync();
+  window.addEventListener('hashchange', () => { if (/^#connect=/.test(window.location.hash)) handleConnectLink(); });
   // Solange die App offen und sichtbar ist, jede Minute abgleichen (z. B. für Lust-Signale)
   setInterval(() => { if (document.visibilityState === 'visible') scheduleSync(0); }, 60000);
 })();
