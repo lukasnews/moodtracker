@@ -63,10 +63,9 @@ Danach im Browser öffnen: **https://sync.chaoten.online/v1/health**. Dort sollt
 
 ## 3. In der App einrichten
 
-- **Erstes Gerät, am besten das mit den meisten Daten:** ⚙️ Einstellungen → **Sync zwischen euren Handys** → **Eigener Server (Pi)**. Die Adresse `https://sync.chaoten.online` ist schon eingetragen. Ein **Paar-Passwort** wählen und **Speichern & synchronisieren** tippen.
+- **Erstes Gerät, am besten das mit den meisten Daten:** ⚙️ Einstellungen → **Sync zwischen euren Handys** → Die Adresse `https://sync.chaoten.online` ist schon eingetragen. Ein **Paar-Passwort** wählen und **Speichern & synchronisieren** tippen.
 - **Jedes weitere Gerät:** Seite öffnen, auf der Startseite **„🔗 Mit Paar-Passwort verbinden“** tippen und das Passwort eingeben. Fertig.
 
-**Umstieg von GitHub:** Auf jedem Gerät ⚙️ → Sync → **Eigener Server (Pi)** wählen und das Passwort eingeben. Das erste Gerät lädt dabei alle Daten hoch. Das GitHub-Repository kann danach als altes Backup bleiben oder gelöscht werden.
 
 ## Pflege
 

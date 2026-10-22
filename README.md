@@ -2,7 +2,7 @@
 
 *Ein Moment für uns – ohne Druck, ohne Erwartungen.*
 
-Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimmung, Nähe und Intimität festhalten könnt. Die App läuft im Browser: ohne Konto, ohne Tracking. Optional könnt ihr eure Geräte **verschlüsselt über euren Raspberry Pi oder ein privates GitHub-Repository synchronisieren** und Lust-Signale als Push über euren eigenen ntfy-Server senden.
+Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimmung, Nähe und Intimität festhalten könnt. Die App läuft im Browser: ohne Konto, ohne Tracking. Optional könnt ihr eure Geräte **verschlüsselt über euren Raspberry Pi synchronisieren** und Lust-Signale als Push über euren eigenen ntfy-Server senden.
 
 ## Dateien
 
@@ -63,7 +63,7 @@ Die Datei `CNAME` im Repository enthält die Domain `moods.chaoten.online`. Dami
 
 Hinweis: Gespeicherte Einträge gehören immer zu genau einer Adresse. Einträge, die unter `…github.io/…` gespeichert wurden, sind unter `moods.chaoten.online` nicht sichtbar. Übertragen lassen sie sich über Export und Import.
 
-## Sync über euren Raspberry Pi (empfohlen)
+## Sync zwischen euren Geräten (Raspberry Pi)
 
 Mit dem kleinen Sync-Server im Ordner [`sync-server/`](sync-server/README.md) braucht ein neues Gerät nur noch **euer Paar-Passwort**: Seite öffnen, **„🔗 Mit Paar-Passwort verbinden“** tippen, fertig. Es gibt keinen Token und keinen Link.
 
@@ -72,35 +72,9 @@ Mit dem kleinen Sync-Server im Ordner [`sync-server/`](sync-server/README.md) br
 - **Einrichtung Schritt für Schritt:** siehe [`sync-server/README.md`](sync-server/README.md).
 - **Passwort ändern:** ⚙️ → Sync → „Sync-Passwort ändern“. Danach auf den anderen Geräten das neue Passwort eintragen.
 
-Die GitHub-Variante (nächster Abschnitt) bleibt als Alternative verfügbar.
-
-## Sync über GitHub (Alternative)
-
-Damit ihr beide auf euren **eigenen Handys** dieselben Einträge, die Wunschliste und die Lust-Signale seht, gleicht die App ihre Daten über **ein privates GitHub-Repository** ab. Die Daten liegen dort als eine einzige Datei (`our-mood-data.enc.json`), die **auf dem Handy mit AES-256 verschlüsselt** wird. Der Schlüssel ist euer gemeinsames Sync-Passwort. GitHub und alle anderen sehen nur unlesbare Daten.
-
-**Einrichtung (einmalig):**
-1. **Privates Repository anlegen:** Auf GitHub **+ → New repository**, Name z. B. `moodtracker-data`, **Private** auswählen und **Create repository** klicken.
-2. **Token erstellen:** GitHub → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
-   - *Repository access:* **Only select repositories** → `moodtracker-data`
-   - *Permissions → Repository permissions → Contents:* **Read and write**
-   - Ablaufdatum nach Wunsch. Danach muss das Token erneuert werden.
-3. **In Our Mood auf dem ersten Handy:** ⚙️ Einstellungen → **Sync zwischen euren Handys** öffnen.
-   - Repository `lukasnews/moodtracker-data` und das Token eintragen
-   - Ein **gemeinsames Sync-Passwort** wählen (mind. 8 Zeichen)
-   - **Speichern & synchronisieren** tippen
-4. **Auf dem zweiten Handy** dasselbe mit **demselben Sync-Passwort**. Das Token darf dasselbe sein. Vorhandene Einträge beider Handys werden zusammengeführt.
-
-**Weiteres Gerät verbinden (Laptop, Tablet, neues Handy):** Auf einem Gerät mit funktionierendem Sync unter ⚙️ → Sync → **„Einrichtungs-Link teilen“** tippen und den Link an dich selbst schicken (Messenger, Mail, AirDrop). Auf dem neuen Gerät den Link öffnen und **nur das Sync-Passwort** eingeben. Repository und Token stecken verschlüsselt im Link, ohne Passwort ist er wertlos. Der Link-Inhalt steht hinter `#`, wird also nicht an den Server gesendet und nach dem Öffnen sofort aus der Adresszeile entfernt.
-
-**So funktioniert der Abgleich:**
-- Die App gleicht beim Öffnen ab, kurz nach jedem Speichern, beim Zurückkehren in die App und jede Minute, solange sie offen ist.
-- Bei gleichzeitigen Änderungen gewinnt pro Eintrag die neuere Änderung. Löschungen werden übertragen.
-- Die Daten bleiben zusätzlich lokal auf jedem Handy. Ohne Internet funktioniert die App weiter und gleicht später ab.
-- Token und Sync-Passwort werden nur im Browser des Geräts gespeichert, nie im Backup-Export und nie im öffentlichen App-Repository.
-- **Sync-Passwort ändern:** ⚙️ → Sync → „Sync-Passwort ändern“. Die Datei im Repository wird mit dem neuen Passwort neu verschlüsselt. Auf dem anderen Handy erscheint dann ein Hinweis: Dort das neue Passwort eintragen und „Speichern & synchronisieren“ tippen.
-- **Token und Sync-Passwort nie im Repository speichern** (auch nicht in einer `.env`). Das Passwort neben den verschlüsselten Daten hebt die Verschlüsselung auf. Besser ist ein Passwort-Manager.
-- **Sync-Passwort vergessen = die Datei im Repository ist nicht mehr lesbar.** Die lokalen Daten auf den Handys bleiben erhalten.
-- GitHub versioniert jede Änderung. Ältere Stände lassen sich so notfalls wiederherstellen.
+- **Paar-Passwort vergessen = die Daten auf dem Server sind nicht mehr lesbar.** Die lokalen Daten auf den Geräten bleiben erhalten. Dann den Server zurücksetzen (siehe `sync-server/README.md`) und neu verbinden.
+- **Passwort nie im Code oder in Repositories speichern**, lieber im Passwort-Manager.
+- Die App gleicht beim Öffnen ab, kurz nach dem Speichern, beim Zurückkehren in die App und jede Minute, solange sie offen ist. Bei gleichzeitigen Änderungen gewinnt die neuere, Löschungen werden übertragen.
 
 ## Lust-Signal als Push aufs andere Handy (ntfy)
 
@@ -112,12 +86,12 @@ Die App kann das Lust-Signal über euren eigenen ntfy-Server **ntfy.chaoten.onli
 3. **In Our Mood auf jedem Handy:** ⚙️ Einstellungen → **Push (ntfy)** öffnen, Token und beide Topics eintragen und **Test senden** tippen.
 4. Sendet jetzt jemand „✨ Ich hätte heute Lust“, bekommt die andere Person eine Benachrichtigung. Ein Tipp darauf öffnet die App.
 
-**Sicherheit:** Das Token wird nur im Browser des jeweiligen Geräts gespeichert, nicht im Backup und nicht im GitHub-Code. Das Repository ist öffentlich, also das Token nie in `index.html` eintragen. Die Content-Security-Policy erlaubt Verbindungen ausschließlich zu `https://ntfy.chaoten.online`.
+**Sicherheit:** Das Token wird nur im Browser des jeweiligen Geräts gespeichert, nicht im Backup und nicht im GitHub-Code. Das Repository ist öffentlich, also das Token nie in `index.html` eintragen. Die Content-Security-Policy erlaubt Verbindungen nur zu euren eigenen Servern.
 
 **Fehlermeldungen:** 401 = Token falsch, 403 = keine Schreibrechte fürs Topic, 400 = Nachrichtenformat abgelehnt.
 
 ## Datenschutz & Sicherheit
 
-- Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy erlaubt Netzwerkverbindungen nur zu euren eigenen Servern (ntfy-Push, Sync auf dem Pi) und zur GitHub-API (optionaler Sync): `connect-src https://ntfy.chaoten.online https://sync.chaoten.online https://api.github.com`.
+- Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy erlaubt Netzwerkverbindungen nur zu euren eigenen Servern (ntfy-Push, Sync auf dem Pi): `connect-src https://ntfy.chaoten.online https://sync.chaoten.online`.
 - Nutzereingaben werden nur als Text (`textContent`) angezeigt, nie als HTML. `eval` wird nicht verwendet.
 - Importierte Dateien werden nur mit `JSON.parse` gelesen und feldweise geprüft. Unbekannte Felder und ungültige Einträge werden verworfen.
