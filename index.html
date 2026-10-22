@@ -373,6 +373,7 @@ fieldset.question-group { border: 0; margin: 0; padding: 0; min-width: 0; }
 .option-list { display: grid; gap: .55rem; }
 @media (min-width: 600px) { .option-list.two-col { grid-template-columns: 1fr 1fr; } }
 .option-list.inline { grid-template-columns: repeat(3, 1fr); }
+.option-list.inline.solo-list { grid-template-columns: repeat(2, 1fr); }
 .option-list.inline .option-body { justify-content: center; text-align: center; font-weight: 600; }
 .option-list.inline .option-check { display: none; }
 
@@ -668,6 +669,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
             </fieldset>
           </div>
 
+          <div class="subquestion" id="solo-group" hidden>
+            <fieldset class="question-group">
+              <legend class="question">Habe ich mich heute selbst befriedigt? <span class="field-hint">(optional)</span></legend>
+              <div class="option-list inline solo-list" id="solo-options"></div>
+            </fieldset>
+          </div>
+
           <div class="subquestion" id="cycle-group" hidden>
             <fieldset class="question-group">
               <legend class="question">In welcher Zyklusphase bin ich? <span class="field-hint">(optional)</span></legend>
@@ -878,6 +886,21 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     </div>
 
     <div class="card settings-card">
+      <h2>Selbstbefriedigung</h2>
+      <p class="muted">Blendet im Formular die optionale Frage „Habe ich mich heute selbst befriedigt?“ ein. Die Angabe ist wie alle anderen in der gemeinsamen Ansicht sichtbar.</p>
+      <div class="chip-list">
+        <label class="option" for="solo-setting-A">
+          <input type="checkbox" id="solo-setting-A" data-solo-profile="A">
+          <span class="option-body"><span class="option-label">Frage für <span data-name="A">Person A</span></span><span class="option-check" aria-hidden="true">✓</span></span>
+        </label>
+        <label class="option" for="solo-setting-B">
+          <input type="checkbox" id="solo-setting-B" data-solo-profile="B">
+          <span class="option-body"><span class="option-label">Frage für <span data-name="B">Person B</span></span><span class="option-check" aria-hidden="true">✓</span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card settings-card">
       <h2>Zyklus</h2>
       <p class="muted">Blendet im Formular die optionale Frage zur Zyklusphase ein. In der Auswertung erscheint dann „Lust nach Zyklusphase“.</p>
       <div class="chip-list">
@@ -1027,6 +1050,11 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     { value: 'vor_periode', label: 'Vor der Periode' },
     { value: 'unsicher', label: 'Weiß nicht' }
   ];
+  // Selbstbefriedigung (optional, pro Profil einschaltbar)
+  const SOLO = [
+    { value: 'nein', label: 'Nein' },
+    { value: 'ja', label: 'Ja' }
+  ];
   // Wunschliste
   const WISH_CATEGORIES = [
     { value: 'date', label: 'Date', emoji: '🍷' },
@@ -1152,7 +1180,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   function defaultData() {
     return {
       version: DATA_VERSION,
-      settings: { names: { ...DEFAULT_NAMES }, cycle: { A: false, B: false } },
+      settings: { names: { ...DEFAULT_NAMES }, cycle: { A: false, B: false }, solo: { A: false, B: false } },
       entries: [],
       wishes: [],
       signals: { A: null, B: null }
@@ -1197,6 +1225,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       mood: pick(MOODS, raw.mood),
       desire,
       cycle: pick(CYCLE, raw.cycle),
+      solo: pick(SOLO, raw.solo),
       frequencyWish: pick(FREQUENCY_WISH, raw.frequencyWish),
       factors: full ? pickMany(FACTORS, raw.factors) : [],
       factorsNote: full ? cleanText(raw.factorsNote) : '',
@@ -1259,6 +1288,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     let wishesRaw = [];
     let signalsRaw = {};
     let cycleRaw = {};
+    let soloRaw = {};
     if (Array.isArray(raw)) {
       entriesRaw = raw;
     } else if (raw && typeof raw === 'object' && Array.isArray(raw.entries)) {
@@ -1267,6 +1297,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       if (Array.isArray(raw.wishes)) wishesRaw = raw.wishes;
       if (raw.signals && typeof raw.signals === 'object') signalsRaw = raw.signals;
       if (raw.settings && raw.settings.cycle && typeof raw.settings.cycle === 'object') cycleRaw = raw.settings.cycle;
+      if (raw.settings && raw.settings.solo && typeof raw.settings.solo === 'object') soloRaw = raw.settings.solo;
     }
     if (!entriesRaw) return { ok: false, data: null, validCount: 0, invalidCount: 0 };
 
@@ -1284,7 +1315,11 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       ok: true,
       data: {
         version: DATA_VERSION,
-        settings: { names: normalizeNames(namesRaw), cycle: { A: cycleRaw.A === true, B: cycleRaw.B === true } },
+        settings: {
+          names: normalizeNames(namesRaw),
+          cycle: { A: cycleRaw.A === true, B: cycleRaw.B === true },
+          solo: { A: soloRaw.A === true, B: soloRaw.B === true }
+        },
         entries,
         wishes: wishesRaw.map(normalizeWish).filter(Boolean),
         signals: { A: normalizeSignal(signalsRaw.A), B: normalizeSignal(signalsRaw.B) }
@@ -1481,6 +1516,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   buildOptions($('#initiator-options'), 'initiator', INITIATOR);
   buildOptions($('#tod-options'), 'timeOfDay', TIME_OF_DAY);
   buildOptions($('#cycle-options'), 'cycle', CYCLE);
+  buildOptions($('#solo-options'), 'solo', SOLO);
   buildOptions($('#wish-category-options'), 'wishCategory', WISH_CATEGORIES);
 
   let entryMode = 'full'; // 'full' = ausführlich, 'quick' = Schnell-Eintrag
@@ -1505,6 +1541,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       mood: checkedValue('mood'),
       desire: desire ? Number(desire) : null,
       cycle: $('#cycle-group').hidden ? '' : checkedValue('cycle'),
+      solo: $('#solo-group').hidden ? '' : checkedValue('solo'),
       frequencyWish: checkedValue('frequencyWish'),
       factors: full ? checkedValues('factors') : [],
       factorsNote: full ? cleanText(factorsNoteInput.value) : '',
@@ -1521,7 +1558,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   }
 
   const contentKey = v => JSON.stringify([
-    v.type || 'full', v.date, v.timeOfDay || '', v.mood, v.desire == null ? null : v.desire, v.cycle || '', v.frequencyWish || '',
+    v.type || 'full', v.date, v.timeOfDay || '', v.mood, v.desire == null ? null : v.desire, v.cycle || '', v.solo || '', v.frequencyWish || '',
     (v.factors || []).slice().sort(), v.factorsNote || '', (v.boosters || []).slice().sort(), v.boostNote || '',
     v.initiativeWish || '', v.intimacy || '', v.initiator || '', v.sexExperience || '', v.afterFeeling || '',
     v.pressure || '', v.wish || ''
@@ -1602,6 +1639,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (!show) $$('input[name="cycle"]', form).forEach(i => { i.checked = false; });
   }
 
+  /** Frage zur Selbstbefriedigung nur zeigen, wenn sie fürs aktive Profil eingeschaltet ist (oder beim Bearbeiten vorhanden). */
+  function updateSoloVisibility(forceShow = false) {
+    const show = forceShow || !!(activeProfile && appData.settings.solo[activeProfile]);
+    $('#solo-group').hidden = !show;
+    if (!show) $$('input[name="solo"]', form).forEach(i => { i.checked = false; });
+  }
+
   function updateDateDisplay() {
     dateInput.max = todayIso();
     const text = formatDateLong(dateInput.value);
@@ -1666,6 +1710,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (todInput) todInput.checked = true;
     $('#edit-banner').hidden = true;
     updateCycleVisibility();
+    updateSoloVisibility();
     applyMode('full');
     updateConditionalQuestions();
     clearErrors();
@@ -1688,6 +1733,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (entry.desire) check('desire', String(entry.desire));
     updateCycleVisibility(!!entry.cycle);
     if (entry.cycle) check('cycle', entry.cycle);
+    updateSoloVisibility(!!entry.solo);
+    if (entry.solo) check('solo', entry.solo);
     if (entry.frequencyWish) check('frequencyWish', entry.frequencyWish);
     entry.factors.forEach(f => check('factors', f));
     factorsNoteInput.value = entry.factorsNote;
@@ -2536,6 +2583,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       ['Lust auf Sex', desireText(entry.desire) || 'keine Angabe'],
       ['Gewünschte Häufigkeit', labelOf(FREQUENCY_WISH, entry.frequencyWish) || 'keine Angabe']
     ];
+    if (entry.solo) rows.push(['Selbst befriedigt', labelOf(SOLO, entry.solo)]);
     if (entry.cycle) rows.push(['Zyklusphase', labelOf(CYCLE, entry.cycle)]);
     if (!quick) {
       rows.push(['Was würde meine Lust fördern', entry.boosters.length ? entry.boosters.map(b => labelOf(BOOSTERS, b)).join(', ') : '–']);
@@ -2774,6 +2822,18 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     parts.push(el('h4', { className: 'stat-sub', text: 'Wie viel Lust wurde angegeben?' }));
     parts.push(barList(DESIRE.map(d => ({ label: `${d.value} – ${d.label}`, count: withDesire.filter(e => String(e.desire) === d.value).length })), withDesire.length));
 
+    const withSolo = entries.filter(e => e.solo);
+    if (withSolo.length) {
+      parts.push(el('h4', { className: 'stat-sub', text: 'Selbstbefriedigung' }));
+      parts.push(barList(countBy(withSolo, SOLO, (e, v) => e.solo === v).reverse(), withSolo.length));
+      const yes = withSolo.filter(e => e.solo === 'ja' && e.desire);
+      const no = withSolo.filter(e => e.solo === 'nein' && e.desire);
+      if (yes.length >= 2 && no.length >= 2) {
+        const avgOf = list => list.reduce((sum, e) => sum + e.desire, 0) / list.length;
+        parts.push(el('p', { className: 'muted small', style: 'margin:.7rem 0 0', text: `Ø Lust an Tagen mit „Ja“: ${formatNumber(avgOf(yes))} / 5 · mit „Nein“: ${formatNumber(avgOf(no))} / 5 – nur eine Beschreibung, keine Ursache.` }));
+      }
+    }
+
     const withCycle = withDesire.filter(e => e.cycle && e.cycle !== 'unsicher');
     if (withCycle.length) {
       parts.push(el('h4', { className: 'stat-sub', text: 'Lust nach Zyklusphase' }));
@@ -2898,6 +2958,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#name-b').value = nameOf('B');
     $('#names-error').hidden = true;
     for (const p of PROFILES) $(`#cycle-setting-${p}`).checked = !!appData.settings.cycle[p];
+    for (const p of PROFILES) $(`#solo-setting-${p}`).checked = !!appData.settings.solo[p];
     renderPushSettings();
     const n = appData.entries.length;
     $('#storage-summary').textContent = storageAvailable
@@ -3006,7 +3067,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         version: DATA_VERSION,
         settings: {
           names: result.hasNames ? result.data.settings.names : { ...appData.settings.names },
-          cycle: result.hasNames ? result.data.settings.cycle : { ...appData.settings.cycle }
+          cycle: result.hasNames ? result.data.settings.cycle : { ...appData.settings.cycle },
+          solo: result.hasNames ? result.data.settings.solo : { ...appData.settings.solo }
         },
         entries: result.data.entries,
         wishes: result.data.wishes,
@@ -3137,6 +3199,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (!persist()) { appData.settings.cycle[p] = !box.checked; box.checked = !box.checked; showInfo('Speichern nicht möglich', 'Die Einstellung konnte nicht gespeichert werden.'); return; }
     if (!editingId) updateCycleVisibility();
     toast(box.checked ? `Zyklus-Frage für ${nameOf(p)} eingeschaltet.` : `Zyklus-Frage für ${nameOf(p)} ausgeschaltet.`);
+  }));
+  $$('[data-solo-profile]').forEach(box => box.addEventListener('change', () => {
+    const p = box.dataset.soloProfile;
+    appData.settings.solo[p] = box.checked;
+    if (!persist()) { appData.settings.solo[p] = !box.checked; box.checked = !box.checked; showInfo('Speichern nicht möglich', 'Die Einstellung konnte nicht gespeichert werden.'); return; }
+    if (!editingId) updateSoloVisibility();
+    toast(box.checked ? `Frage für ${nameOf(p)} eingeschaltet.` : `Frage für ${nameOf(p)} ausgeschaltet.`);
   }));
   $('#export-btn').addEventListener('click', exportData);
   $('#import-input').addEventListener('change', handleImportFile);

@@ -22,6 +22,7 @@ Zum lokalen Ausprobieren öffnest du `index.html` einfach per Doppelklick im Bro
 - **Kleiner Monatskalender** über der Eintragsliste: zeigt pro Tag die Stimmungs-Emojis; Antippen zeigt die Einträge dieses Tages.
 - **Lust-Signal:** „Ich hätte heute Lust“ (optional mit kurzer Nachricht). Die andere Person sieht es beim Öffnen ihres Profils; um Mitternacht verschwindet es.
 - **Wunschliste zu zweit:** Ideen für Dates, Neues und Orte – beide können ergänzen, abhaken und löschen.
+- **Selbstbefriedigung (optional):** In den Einstellungen pro Person einschaltbar; Ja/Nein-Frage im Formular (auch Schnell-Eintrag) und Übersicht in der Auswertung.
 - **Zyklus (optional):** In den Einstellungen pro Person einschaltbar; Frage zur Zyklusphase im Formular und „Lust nach Zyklusphase“ in der Auswertung.
 - Profilbild zeigt den Anfangsbuchstaben des Namens (bei gleichem Anfangsbuchstaben zwei Buchstaben).
 - **Schnell-Eintrag „Lust heute?“** für beliebige Tage: Lust (Pflicht), Stimmung und Wunsch-Häufigkeit (optional).
