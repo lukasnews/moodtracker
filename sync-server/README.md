@@ -69,6 +69,8 @@ Danach im Browser öffnen: **https://sync.chaoten.online/v1/health**. Dort sollt
 
 ## Pflege
 
+**Geräte abmelden:** Das passiert in der App unter ⚙️ → Sync. Beim „Alle anderen Geräte abmelden“ merkt sich der Server das alte Passwort als gesperrt. Geräte mit dem alten Passwort bekommen die Antwort `410` und löschen ihre lokalen Daten. Ein gesperrtes Passwort kann nicht wieder verwendet werden.
+
 **Updates:**
 ```bash
 cd ~/moodtracker && git pull && cd sync-server && docker compose up -d --build

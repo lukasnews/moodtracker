@@ -13,7 +13,9 @@ Endpunkte (JSON):
   GET  /v1/health            → {"ok": true}
   GET  /v1/data              → {"version": n, "data": {...}} | 404 (noch leer) | 401
   PUT  /v1/data              ← {"version": erwartet, "data": {...}} → 200 | 409 (Konflikt) | 401
-  POST /v1/rekey             ← {"newToken": "...", "version": erwartet, "data": {...}} (Passwort ändern)
+  POST /v1/rekey             ← {"newToken": "...", "version": erwartet, "data": {...}, "revokeOld": bool}
+                               (Passwort ändern; mit revokeOld=true werden alle Geräte mit dem alten
+                               Passwort abgemeldet: Sie erhalten 410 und löschen ihre lokalen Daten.)
 
 Konfiguration über Umgebungsvariablen (siehe docker-compose.yml).
 """
@@ -71,6 +73,12 @@ def open_db():
                updated_at TEXT NOT NULL
            )"""
     )
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS revoked (
+               token_hash TEXT PRIMARY KEY,
+               revoked_at TEXT NOT NULL
+           )"""
+    )
     conn.commit()
     return conn
 
@@ -87,6 +95,11 @@ def find_space(token):
         if hmac.compare_digest(row[1], wanted):
             return {"id": row[0], "version": row[2], "data": row[3]}
     return None
+
+
+def is_revoked(token):
+    with db_lock:
+        return DB.execute("SELECT 1 FROM revoked WHERE token_hash = ?", (token_hash(token),)).fetchone() is not None
 
 
 def space_count():
@@ -181,6 +194,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(401, {"error": "unauthorized"})
             return None
         space = find_space(token)
+        if space is None and is_revoked(token):
+            # Gerät wurde über „Alle anderen Geräte abmelden“ ausgesperrt
+            self.send_json(410, {"error": "revoked"})
+            return None
         if space is None and space_count() >= MAX_SPACES:
             # Server ist schon einem Paar zugeordnet → falsches Passwort
             self.record_failure()
@@ -261,17 +278,23 @@ class Handler(BaseHTTPRequestHandler):
                 or not valid_envelope(body.get("data"))):
             return self.send_json(400, {"error": "bad_request"})
         new_hash = token_hash(body["newToken"])
+        revoke_old = body.get("revokeOld") is True
         with db_lock:
+            if DB.execute("SELECT 1 FROM revoked WHERE token_hash = ?", (new_hash,)).fetchone():
+                return self.send_json(400, {"error": "password_reused"})
             current = DB.execute("SELECT version FROM spaces WHERE id = ?", (space["id"],)).fetchone()[0]
             if current != body["version"]:
                 return self.send_json(409, {"error": "conflict", "version": current})
             clash = DB.execute("SELECT id FROM spaces WHERE token_hash = ? AND id != ?", (new_hash, space["id"])).fetchone()
             if clash:
                 return self.send_json(400, {"error": "bad_request"})
+            old_hash = DB.execute("SELECT token_hash FROM spaces WHERE id = ?", (space["id"],)).fetchone()[0]
             DB.execute(
                 "UPDATE spaces SET token_hash = ?, version = ?, data = ?, updated_at = ? WHERE id = ?",
                 (new_hash, current + 1, json.dumps(body["data"], separators=(",", ":")), now_iso(), space["id"]),
             )
+            if revoke_old:
+                DB.execute("INSERT OR REPLACE INTO revoked (token_hash, revoked_at) VALUES (?, ?)", (old_hash, now_iso()))
             DB.commit()
             return self.send_json(200, {"version": current + 1})
 

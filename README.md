@@ -71,6 +71,8 @@ Mit dem kleinen Sync-Server im Ordner [`sync-server/`](sync-server/README.md) br
 - Er speichert nur verschlüsselte Daten und kennt das Passwort nicht. Fehlversuche werden gebremst.
 - **Einrichtung Schritt für Schritt:** siehe [`sync-server/README.md`](sync-server/README.md).
 - **Passwort ändern:** ⚙️ → Sync → „Sync-Passwort ändern“. Danach auf den anderen Geräten das neue Passwort eintragen.
+- **Dieses Gerät abmelden** (z. B. Arbeitslaptop): ⚙️ → Sync → „Dieses Gerät abmelden …“. Vorher wird ein letztes Mal abgeglichen. Danach wählst du entweder **„Abmelden & Daten löschen“** (nichts bleibt auf dem Gerät) oder **„Nur Sync trennen“** (die Einträge bleiben lokal).
+- **Alle anderen Geräte abmelden** (z. B. verlorenes Handy): Beim Passwort-Ändern „Alle anderen Geräte abmelden“ ankreuzen. Jedes andere Gerät löscht beim nächsten Abgleich seine lokalen Daten. Eure eigenen Geräte verbinden sich danach mit dem neuen Passwort neu, und alles kommt vom Server zurück. Ein Gerät, das nie wieder online geht, behält allerdings seine alte Kopie.
 
 - **Paar-Passwort vergessen = die Daten auf dem Server sind nicht mehr lesbar.** Die lokalen Daten auf den Geräten bleiben erhalten. Dann den Server zurücksetzen (siehe `sync-server/README.md`) und neu verbinden.
 - **Passwort nie im Code oder in Repositories speichern**, lieber im Passwort-Manager.
