@@ -37,6 +37,19 @@ Zum lokalen Ausprobieren öffnest du `index.html` einfach per Doppelklick im Bro
    - Werden Browserdaten bzw. Websitedaten gelöscht, sind die Einträge weg. Erstellt deshalb regelmäßig ein Backup.
    - GitHub Pages schützt keine privaten Daten. Wer das entsperrte Gerät benutzen kann, kann die Einträge sehen. Die Backup-Datei ist unverschlüsselt.
 
+## Eigene Domain: moods.chaoten.online
+
+Die Datei `CNAME` im Repository enthält die Domain `moods.chaoten.online`. Damit sie funktioniert:
+
+1. **DNS-Eintrag beim Domain-Anbieter** von `chaoten.online` anlegen:
+   - Typ: `CNAME`
+   - Name/Host: `moods`
+   - Ziel/Wert: `lukasnews.github.io` (ohne Repository-Namen)
+2. Auf GitHub unter **Settings → Pages → Custom domain** `moods.chaoten.online` eintragen (falls nicht schon automatisch gesetzt) und **Save** klicken.
+3. Sobald der DNS-Check grün ist (das kann von wenigen Minuten bis zu 24 Stunden dauern), **Enforce HTTPS** aktivieren.
+
+Hinweis: Gespeicherte Einträge gehören immer zu genau einer Adresse. Einträge, die unter `…github.io/…` gespeichert wurden, sind unter `moods.chaoten.online` nicht sichtbar. Übertragen lassen sie sich über Export und Import.
+
 ## Datenschutz & Sicherheit
 
 - Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy (`connect-src 'none'`) verhindert, dass die Seite Netzwerkverbindungen aufbaut.
