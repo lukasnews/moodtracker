@@ -219,7 +219,35 @@ main { padding: 1.25rem 0 4rem; }
 .progress-track { height: 8px; border-radius: 999px; background: var(--sand); overflow: hidden; }
 .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--sage), var(--sage-strong)); border-radius: 999px; transition: width .4s ease; }
 .progress-text { font-size: .88rem; color: var(--text-muted); margin: .5rem 0 .55rem; }
-.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; list-style: none; padding: 0; margin: 0; }
+.steps { display: flex; gap: 4px; list-style: none; padding: 0; margin: 0; }
+.steps li { flex: 1 1 0; min-width: 0; }
+/* Schnell-Eintrag: ausführliche Teile ausblenden */
+#mood-form.quick [data-full-only] { display: none !important; }
+
+/* Lust-Skala 1–5 */
+.scale-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .45rem; }
+.scale-grid .option-body { flex-direction: column; justify-content: center; text-align: center; gap: .2rem; min-height: 84px; padding: .6rem .25rem; }
+.scale-grid .option-emoji { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; }
+.scale-grid .option-label { font-size: .8rem; line-height: 1.2; }
+.scale-grid .option-check { display: none; }
+
+/* Kennzahlen & Verlauf in der Auswertung */
+.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .6rem; margin-bottom: 1.2rem; }
+.stat-tile { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .8rem 1rem; }
+.stat-tile .tile-value { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.2; display: block; }
+.stat-tile .tile-label { font-size: .85rem; color: var(--text-muted); }
+.stat-sub { font-size: 1rem; font-family: var(--font-body); font-weight: 700; margin: 1.4rem 0 .7rem; }
+.chart-wrap { margin: .3rem 0 .4rem; }
+.chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+.chart-grid { stroke: var(--line); stroke-width: 1; }
+.chart-axis-label { fill: var(--text-muted); font-size: 10px; font-family: var(--font-body); }
+.chart-line { fill: none; stroke: var(--sage-strong); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart-dot { fill: var(--sage-strong); stroke: var(--card); stroke-width: 2; }
+.chart-hit { fill: transparent; cursor: pointer; }
+.chart-hit:hover + .chart-dot, .chart-hit:focus + .chart-dot { r: 6; }
+.chart-tip { font-size: .88rem; color: var(--text-muted); min-height: 1.4em; margin: .2rem 0 0; }
+details.chart-table summary { cursor: pointer; font-size: .9rem; color: var(--sage-strong); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+details.chart-table ul { margin: 0; padding-left: 1.2rem; font-size: .92rem; }
 .step-link {
   display: flex; flex-direction: column; align-items: center; gap: .15rem; text-decoration: none;
   color: var(--text-muted); font-size: .76rem; padding: .2rem 0; border-radius: 10px; min-height: 44px;
@@ -375,7 +403,14 @@ fieldset.question-group { border: 0; margin: 0; padding: 0; min-width: 0; }
   font-family: var(--font-display); font-size: 1.2rem; font-weight: 600;
   padding: 1rem 1.1rem; border-radius: var(--radius-sm); background: var(--sage-soft); margin-bottom: 1rem;
 }
-.privacy-list { padding-left: 1.2rem; margin: 0; display: grid; gap: .45rem; }
+.privacy-list { padding-left: 1.2rem; margin: .4rem 0 0; display: grid; gap: .45rem; }
+.privacy-details summary {
+  cursor: pointer; font-weight: 600; color: var(--sage-strong); min-height: 44px;
+  display: flex; align-items: center; gap: .4rem; list-style: none;
+}
+.privacy-details summary::-webkit-details-marker { display: none; }
+.privacy-details summary::before { content: "▸"; transition: transform .2s; display: inline-block; }
+.privacy-details[open] summary::before { transform: rotate(90deg); }
 .name-grid { display: grid; gap: .25rem 1rem; }
 @media (min-width: 560px) { .name-grid { grid-template-columns: 1fr 1fr; } }
 .data-actions { display: grid; gap: .6rem; }
@@ -484,6 +519,12 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <p class="date-display" id="date-display" aria-hidden="true"></p>
           <input type="date" id="entry-date" class="input" required aria-describedby="date-error">
           <p class="field-error" id="date-error" hidden></p>
+          <p class="field-label" id="mode-label">Art des Eintrags</p>
+          <div class="segmented" role="group" aria-labelledby="mode-label">
+            <button type="button" id="mode-full" aria-pressed="true">Ausführlich</button>
+            <button type="button" id="mode-quick" aria-pressed="false">Schnell: Lust heute?</button>
+          </div>
+          <p class="muted small" id="mode-hint" style="margin:.5rem 0 0">Das ganze Formular für euren vereinbarten Tag.</p>
         </div>
 
         <div class="card progress" aria-label="Fortschritt im Formular">
@@ -491,10 +532,11 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <p class="progress-text" id="progress-text">0 von 4 Abschnitten ausgefüllt</p>
           <ol class="steps">
             <li><a class="step-link" href="#section-a" data-step="a"><span class="step-dot">A</span><span class="step-label">Stimmung</span><span class="visually-hidden step-state"></span></a></li>
-            <li><a class="step-link" href="#section-b" data-step="b"><span class="step-dot">B</span><span class="step-label">Einflüsse</span><span class="visually-hidden step-state"></span></a></li>
-            <li><a class="step-link" href="#section-c" data-step="c"><span class="step-dot">C</span><span class="step-label">Intimität</span><span class="visually-hidden step-state"></span></a></li>
-            <li><a class="step-link" href="#section-d" data-step="d"><span class="step-dot">D</span><span class="step-label">Reflexion</span><span class="visually-hidden step-state"></span></a></li>
-            <li><a class="step-link" href="#section-e" data-step="e"><span class="step-dot">E</span><span class="step-label">Speichern</span><span class="visually-hidden step-state"></span></a></li>
+            <li data-full-only><a class="step-link" href="#section-b" data-step="b"><span class="step-dot">B</span><span class="step-label">Einflüsse</span><span class="visually-hidden step-state"></span></a></li>
+            <li><a class="step-link" href="#section-l" data-step="l"><span class="step-dot">C</span><span class="step-label">Lust</span><span class="visually-hidden step-state"></span></a></li>
+            <li data-full-only><a class="step-link" href="#section-c" data-step="c"><span class="step-dot">D</span><span class="step-label">Intimität</span><span class="visually-hidden step-state"></span></a></li>
+            <li data-full-only><a class="step-link" href="#section-d" data-step="d"><span class="step-dot">E</span><span class="step-label">Reflexion</span><span class="visually-hidden step-state"></span></a></li>
+            <li><a class="step-link" href="#section-e" data-step="e"><span class="step-dot" id="save-step-letter">F</span><span class="step-label">Speichern</span><span class="visually-hidden step-state"></span></a></li>
           </ol>
         </div>
 
@@ -503,7 +545,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <div class="section-head">
             <span class="section-tag" aria-hidden="true">A</span>
             <h2 id="section-a-title">Wie geht es mir heute?</h2>
-            <span class="badge required">Pflicht</span>
+            <span class="badge required" id="mood-badge">Pflicht</span>
           </div>
           <fieldset class="question-group" aria-describedby="mood-error">
             <legend class="question">Wie fühle ich mich heute?</legend>
@@ -513,7 +555,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         </section>
 
         <!-- Abschnitt B -->
-        <section class="card form-section" id="section-b" aria-labelledby="section-b-title">
+        <section class="card form-section" id="section-b" aria-labelledby="section-b-title" data-full-only>
           <div class="section-head">
             <span class="section-tag" aria-hidden="true">B</span>
             <h2 id="section-b-title">Was beeinflusst meine Stimmung?</h2>
@@ -528,10 +570,48 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <textarea id="factors-note" class="textarea" maxlength="2000" rows="3"></textarea>
         </section>
 
-        <!-- Abschnitt C -->
-        <section class="card form-section" id="section-c" aria-labelledby="section-c-title">
+        <!-- Abschnitt C: Lust & Wünsche -->
+        <section class="card form-section" id="section-l" aria-labelledby="section-l-title">
           <div class="section-head">
             <span class="section-tag" aria-hidden="true">C</span>
+            <h2 id="section-l-title">Lust &amp; Wünsche</h2>
+            <span class="badge required">Pflicht</span>
+          </div>
+          <fieldset class="question-group" aria-describedby="desire-error">
+            <legend class="question">Wie viel Lust auf Sex habe ich heute?</legend>
+            <div class="scale-grid" id="desire-options"></div>
+          </fieldset>
+          <p class="field-error" id="desire-error" hidden></p>
+
+          <div class="subquestion">
+            <fieldset class="question-group">
+              <legend class="question">Wie oft hätte ich gern Sex? <span class="field-hint">(optional)</span></legend>
+              <div class="option-list two-col" id="frequency-wish-options"></div>
+            </fieldset>
+          </div>
+
+          <div class="subquestion" data-full-only>
+            <fieldset class="question-group">
+              <legend class="question">Was würde meine Lust fördern? <span class="field-hint">(optional)</span></legend>
+              <p class="question-hint">Mehrfachauswahl möglich.</p>
+              <div class="chip-list" id="booster-options"></div>
+            </fieldset>
+            <label class="field-label" for="boost-note">Mein konkreter Wunsch <span class="field-hint">(optional)</span></label>
+            <textarea id="boost-note" class="textarea" maxlength="2000" rows="2"></textarea>
+          </div>
+
+          <div class="subquestion" data-full-only>
+            <fieldset class="question-group">
+              <legend class="question">Wünsche ich mir mehr Initiative von meinem Gegenüber? <span class="field-hint">(optional)</span></legend>
+              <div class="option-list inline" id="initiative-wish-options"></div>
+            </fieldset>
+          </div>
+        </section>
+
+        <!-- Abschnitt D: Intimität -->
+        <section class="card form-section" id="section-c" aria-labelledby="section-c-title" data-full-only>
+          <div class="section-head">
+            <span class="section-tag" aria-hidden="true">D</span>
             <h2 id="section-c-title">Wie war es mit Intimität heute?</h2>
             <span class="badge required">Pflicht</span>
           </div>
@@ -541,6 +621,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
             <div class="option-list" id="intimacy-options"></div>
           </fieldset>
           <p class="field-error" id="intimacy-error" hidden></p>
+
+          <div class="subquestion" id="initiator-group" hidden>
+            <fieldset class="question-group">
+              <legend class="question">Wer hat die Initiative ergriffen? <span class="field-hint">(optional)</span></legend>
+              <div class="option-list two-col" id="initiator-options"></div>
+            </fieldset>
+          </div>
 
           <div class="subquestion" id="sex-experience-group" hidden>
             <fieldset class="question-group">
@@ -557,10 +644,10 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           </div>
         </section>
 
-        <!-- Abschnitt D -->
-        <section class="card form-section" id="section-d" aria-labelledby="section-d-title">
+        <!-- Abschnitt E: Reflexion -->
+        <section class="card form-section" id="section-d" aria-labelledby="section-d-title" data-full-only>
           <div class="section-head">
-            <span class="section-tag" aria-hidden="true">D</span>
+            <span class="section-tag" aria-hidden="true">E</span>
             <h2 id="section-d-title">Freiwillige Reflexion</h2>
             <span class="badge">optional</span>
           </div>
@@ -622,6 +709,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     <div class="card settings-card">
       <h2>Datenschutz</h2>
       <p class="privacy-highlight">Deine Einträge werden auf diesem Gerät gespeichert.</p>
+      <details class="privacy-details">
+      <summary>Datenschutzhinweise anzeigen</summary>
       <ul class="privacy-list">
         <li>Alle Angaben bleiben ausschließlich in diesem Browser auf diesem Gerät. Es werden keine Daten an Server gesendet – kein Konto, keine Analyse, kein Tracking, keine Werbung.</li>
         <li><strong>Wenn Browserdaten gelöscht werden</strong> (z.&nbsp;B. „Verlauf/Websitedaten löschen“, privater Modus, Speicherbereinigung des Systems), <strong>können die Einträge unwiederbringlich verloren gehen.</strong> Erstelle deshalb regelmäßig eine Sicherung.</li>
@@ -630,6 +719,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         <li>„Mein Bereich“ und die gemeinsame Ansicht sind eine Rücksichtsfunktion, keine echte Zugriffskontrolle.</li>
         <li>Die Sicherungsdatei (JSON) ist nicht verschlüsselt. Bewahre sie an einem sicheren Ort auf.</li>
       </ul>
+      </details>
       <p class="muted small" style="margin-top:1rem" id="storage-summary"></p>
     </div>
 
@@ -742,6 +832,44 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     { value: 'ja', label: 'Ja' }
   ];
 
+  // Lust-Skala 1–5 (gespeichert als Zahl)
+  const DESIRE = [
+    { value: '1', label: 'Gar keine' },
+    { value: '2', label: 'Wenig' },
+    { value: '3', label: 'Etwas' },
+    { value: '4', label: 'Ziemlich viel' },
+    { value: '5', label: 'Sehr viel' }
+  ];
+  const FREQUENCY_WISH = [
+    { value: 'seltener', label: 'Seltener' },
+    { value: 'so_wie_jetzt', label: 'So wie jetzt' },
+    { value: 'oefter', label: 'Öfter' },
+    { value: 'viel_oefter', label: 'Viel öfter' }
+  ];
+  const BOOSTERS = [
+    { value: 'zeit_zu_zweit', label: 'Mehr Zeit zu zweit' },
+    { value: 'ausgeschlafen', label: 'Ausgeschlafen sein' },
+    { value: 'weniger_stress', label: 'Weniger Stress' },
+    { value: 'initiative_gegenueber', label: 'Initiative vom Gegenüber' },
+    { value: 'zaertlichkeit', label: 'Mehr Zärtlichkeit im Alltag' },
+    { value: 'vorspiel', label: 'Mehr Vorspiel' },
+    { value: 'neues', label: 'Abwechslung / Neues ausprobieren' },
+    { value: 'ungestoert', label: 'Ungestörte Zeit' },
+    { value: 'date', label: 'Ein Date / etwas Schönes zusammen' },
+    { value: 'wertschaetzung', label: 'Komplimente / Wertschätzung' }
+  ];
+  const INITIATOR = [
+    { value: 'ich', label: 'Ich' },
+    { value: 'gegenueber', label: 'Mein Gegenüber' },
+    { value: 'beide', label: 'Beide' },
+    { value: 'ergeben', label: 'Hat sich einfach ergeben' }
+  ];
+  const INITIATIVE_WISH = [
+    { value: 'mehr', label: 'Ja, gern mehr' },
+    { value: 'passt', label: 'Passt so' },
+    { value: 'weniger', label: 'Lieber weniger' }
+  ];
+
   const PROFILES = ['A', 'B'];
   const DEFAULT_NAMES = { A: 'Person A', B: 'Person B' };
   const STORAGE_KEY = 'ourMood.data.v1';
@@ -850,30 +978,45 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
     if (!PROFILES.includes(raw.profile)) return null;
     if (!isValidIsoDate(raw.date)) return null;
-    if (!optionOf(MOODS, raw.mood)) return null;
-    if (!optionOf(INTIMACY, raw.intimacy)) return null;
 
-    const factors = Array.isArray(raw.factors)
-      ? FACTORS.map(f => f.value).filter(v => raw.factors.includes(v))
-      : [];
-    const sexExperience = raw.intimacy === 'sex' && optionOf(SEX_EXPERIENCE, raw.sexExperience) ? raw.sexExperience : '';
-    const afterFeeling = raw.intimacy !== 'kein_sex' && optionOf(AFTER_FEELING, raw.afterFeeling) ? raw.afterFeeling : '';
-    const pressure = optionOf(PRESSURE, raw.pressure) ? raw.pressure : '';
+    // "quick" = Schnell-Eintrag (nur Lust, optional Stimmung & Wunsch-Häufigkeit)
+    const type = raw.type === 'quick' ? 'quick' : 'full';
+    const desireNumber = Number(raw.desire);
+    const desire = Number.isInteger(desireNumber) && desireNumber >= 1 && desireNumber <= 5 ? desireNumber : null;
+    const pick = (list, value) => (optionOf(list, value) ? value : '');
+    const pickMany = (list, values) => Array.isArray(values) ? list.map(o => o.value).filter(v => values.includes(v)) : [];
+
+    if (type === 'quick') {
+      if (desire === null) return null;
+    } else {
+      // Ältere ausführliche Einträge haben noch keine Lust-Skala – deshalb ist sie hier optional.
+      if (!optionOf(MOODS, raw.mood)) return null;
+      if (!optionOf(INTIMACY, raw.intimacy)) return null;
+    }
+    const full = type === 'full';
+    const intimacy = full ? raw.intimacy : '';
     const nowIso = new Date().toISOString();
     const validTime = v => typeof v === 'string' && v.length < 40 && !isNaN(new Date(v).getTime());
 
     return {
       id: typeof raw.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(raw.id) ? raw.id : createId(),
+      type,
       profile: raw.profile,
       date: raw.date,
-      mood: raw.mood,
-      factors,
-      factorsNote: cleanText(raw.factorsNote),
-      intimacy: raw.intimacy,
-      sexExperience,
-      afterFeeling,
-      pressure,
-      wish: cleanText(raw.wish),
+      mood: pick(MOODS, raw.mood),
+      desire,
+      frequencyWish: pick(FREQUENCY_WISH, raw.frequencyWish),
+      factors: full ? pickMany(FACTORS, raw.factors) : [],
+      factorsNote: full ? cleanText(raw.factorsNote) : '',
+      boosters: full ? pickMany(BOOSTERS, raw.boosters) : [],
+      boostNote: full ? cleanText(raw.boostNote) : '',
+      initiativeWish: full ? pick(INITIATIVE_WISH, raw.initiativeWish) : '',
+      intimacy,
+      initiator: full && intimacy !== 'kein_sex' ? pick(INITIATOR, raw.initiator) : '',
+      sexExperience: intimacy === 'sex' ? pick(SEX_EXPERIENCE, raw.sexExperience) : '',
+      afterFeeling: full && intimacy !== 'kein_sex' ? pick(AFTER_FEELING, raw.afterFeeling) : '',
+      pressure: full ? pick(PRESSURE, raw.pressure) : '',
+      wish: full ? cleanText(raw.wish) : '',
       createdAt: validTime(raw.createdAt) ? raw.createdAt : nowIso,
       updatedAt: validTime(raw.updatedAt) ? raw.updatedAt : (validTime(raw.createdAt) ? raw.createdAt : nowIso)
     };
@@ -1103,6 +1246,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   buildOptions($('#sex-experience-options'), 'sexExperience', SEX_EXPERIENCE);
   buildOptions($('#after-feeling-options'), 'afterFeeling', AFTER_FEELING);
   buildOptions($('#pressure-options'), 'pressure', PRESSURE);
+  buildOptions($('#desire-options'), 'desire', DESIRE.map(d => ({ ...d, emoji: d.value })));
+  buildOptions($('#frequency-wish-options'), 'frequencyWish', FREQUENCY_WISH);
+  buildOptions($('#booster-options'), 'boosters', BOOSTERS, 'checkbox');
+  buildOptions($('#initiative-wish-options'), 'initiativeWish', INITIATIVE_WISH);
+  buildOptions($('#initiator-options'), 'initiator', INITIATOR);
+
+  let entryMode = 'full'; // 'full' = ausführlich, 'quick' = Schnell-Eintrag
 
   const checkedValue = name => {
     const input = form.querySelector(`input[name="${name}"]:checked`);
@@ -1110,41 +1260,106 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   };
 
   /** Liest den aktuellen Formularinhalt als einfaches Objekt. */
+  const checkedValues = name => $$(`input[name="${name}"]:checked`, form).map(i => i.value);
+
+  /** Im Schnell-Modus werden nur Datum, Stimmung, Lust und Wunsch-Häufigkeit übernommen. */
   function getFormValues() {
-    const intimacy = checkedValue('intimacy');
+    const full = entryMode === 'full';
+    const intimacy = full ? checkedValue('intimacy') : '';
+    const desire = checkedValue('desire');
     return {
+      type: entryMode,
       date: dateInput.value,
       mood: checkedValue('mood'),
-      factors: $$('input[name="factors"]:checked', form).map(i => i.value),
-      factorsNote: cleanText(factorsNoteInput.value),
+      desire: desire ? Number(desire) : null,
+      frequencyWish: checkedValue('frequencyWish'),
+      factors: full ? checkedValues('factors') : [],
+      factorsNote: full ? cleanText(factorsNoteInput.value) : '',
+      boosters: full ? checkedValues('boosters') : [],
+      boostNote: full ? cleanText($('#boost-note').value) : '',
+      initiativeWish: full ? checkedValue('initiativeWish') : '',
       intimacy,
+      initiator: (intimacy === 'naehe' || intimacy === 'sex') ? checkedValue('initiator') : '',
       sexExperience: intimacy === 'sex' ? checkedValue('sexExperience') : '',
       afterFeeling: (intimacy === 'naehe' || intimacy === 'sex') ? checkedValue('afterFeeling') : '',
-      pressure: checkedValue('pressure'),
-      wish: cleanText(wishInput.value)
+      pressure: full ? checkedValue('pressure') : '',
+      wish: full ? cleanText(wishInput.value) : ''
     };
   }
 
-  const contentKey = values => JSON.stringify([
-    values.date, values.mood, values.factors.slice().sort(), values.factorsNote, values.intimacy,
-    values.sexExperience, values.afterFeeling, values.pressure, values.wish
+  const contentKey = v => JSON.stringify([
+    v.type || 'full', v.date, v.mood, v.desire == null ? null : v.desire, v.frequencyWish || '',
+    (v.factors || []).slice().sort(), v.factorsNote || '', (v.boosters || []).slice().sort(), v.boostNote || '',
+    v.initiativeWish || '', v.intimacy || '', v.initiator || '', v.sexExperience || '', v.afterFeeling || '',
+    v.pressure || '', v.wish || ''
   ]);
 
-  function takeSnapshot() { formSnapshot = contentKey(getFormValues()); updateDirtyState(); }
-  const isFormDirty = () => activeProfile !== null && !justSaved && contentKey(getFormValues()) !== formSnapshot;
+  /** Prüft, ob in den nur ausführlich sichtbaren Feldern etwas eingetragen ist. */
+  function hasFullOnlyInput() {
+    return $$('[data-full-only] input:checked', form).length > 0 ||
+      $$('[data-full-only] textarea', form).some(t => t.value.trim() !== '');
+  }
+
+  function clearFullOnlyInputs() {
+    $$('[data-full-only] input', form).forEach(i => { i.checked = false; });
+    $$('[data-full-only] textarea', form).forEach(t => { t.value = ''; });
+  }
+
+  /** Schaltet zwischen ausführlichem Eintrag und Schnell-Eintrag um. */
+  function applyMode(mode) {
+    entryMode = mode;
+    const quick = mode === 'quick';
+    form.classList.toggle('quick', quick);
+    $('#mode-full').setAttribute('aria-pressed', String(!quick));
+    $('#mode-quick').setAttribute('aria-pressed', String(quick));
+    $('#mode-hint').textContent = quick
+      ? 'Kurz festhalten, wie viel Lust du heute hast – an jedem beliebigen Tag.'
+      : 'Das ganze Formular für euren vereinbarten Tag.';
+    const moodBadge = $('#mood-badge');
+    moodBadge.textContent = quick ? 'optional' : 'Pflicht';
+    moodBadge.classList.toggle('required', !quick);
+    $('#save-step-letter').textContent = quick ? 'D' : 'F';
+    $('#section-l .section-tag').textContent = quick ? 'B' : 'C';
+    $('[data-step="l"] .step-dot').textContent = quick ? 'B' : 'C';
+    updateConditionalQuestions();
+    clearErrors();
+    updateProgress();
+    updateDirtyState();
+  }
+
+  async function switchMode(mode) {
+    if (mode === entryMode) return;
+    if (editingId) {
+      await showInfo('Art nicht änderbar', 'Beim Bearbeiten bleibt die Art des Eintrags gleich. Lege für die andere Art einen neuen Eintrag an.');
+      return;
+    }
+    if (mode === 'quick' && hasFullOnlyInput()) {
+      const ok = await confirmAction('Zum Schnell-Eintrag wechseln?',
+        'Beim Schnell-Eintrag werden nur Datum, Stimmung, Lust und Wunsch-Häufigkeit gespeichert. Deine übrigen Eingaben werden entfernt.',
+        'Wechseln', { danger: true });
+      if (!ok) return;
+      clearFullOnlyInputs();
+    }
+    applyMode(mode);
+  }
+
+  // Für "ungespeichert" zählt nur der Inhalt – ein bloßer Moduswechsel ist keine Eingabe.
+  const dirtyKey = () => contentKey({ ...getFormValues(), type: '' });
+  function takeSnapshot() { formSnapshot = dirtyKey(); updateDirtyState(); }
+  const isFormDirty = () => activeProfile !== null && !justSaved && dirtyKey() !== formSnapshot;
 
   /** Zeigt die Zusatzfragen nur, wenn sie zur Intimitätsauswahl passen. */
   function updateConditionalQuestions() {
     const intimacy = checkedValue('intimacy');
     const showSex = intimacy === 'sex';
     const showAfter = intimacy === 'naehe' || intimacy === 'sex';
-    const sexGroup = $('#sex-experience-group');
-    const afterGroup = $('#after-feeling-group');
-    sexGroup.hidden = !showSex;
-    afterGroup.hidden = !showAfter;
+    $('#sex-experience-group').hidden = !showSex;
+    $('#after-feeling-group').hidden = !showAfter;
+    $('#initiator-group').hidden = !showAfter;
     // Nicht mehr passende Antworten zurücksetzen, damit nichts Verstecktes gespeichert wird.
-    if (!showSex) $$('input[name="sexExperience"]', form).forEach(i => { i.checked = false; });
-    if (!showAfter) $$('input[name="afterFeeling"]', form).forEach(i => { i.checked = false; });
+    const uncheck = name => $$(`input[name="${name}"]`, form).forEach(i => { i.checked = false; });
+    if (!showSex) uncheck('sexExperience');
+    if (!showAfter) { uncheck('afterFeeling'); uncheck('initiator'); }
   }
 
   function updateDateDisplay() {
@@ -1155,27 +1370,31 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
 
   function updateProgress() {
     const v = getFormValues();
+    const quick = entryMode === 'quick';
     const done = {
       a: !!v.mood,
       b: v.factors.length > 0 || !!v.factorsNote,
+      l: v.desire !== null,
       c: !!v.intimacy,
       d: !!v.pressure || !!v.wish
     };
-    const count = ['a', 'b', 'c', 'd'].filter(k => done[k]).length;
-    $('#progress-fill').style.width = (count / 4 * 100) + '%';
+    const sections = quick ? ['a', 'l'] : ['a', 'b', 'l', 'c', 'd'];
+    const required = quick ? ['l'] : ['a', 'l', 'c'];
+    const names = { a: 'Stimmung', l: 'Lust', c: 'Intimität' };
+    const count = sections.filter(k => done[k]).length;
+    $('#progress-fill').style.width = (count / sections.length * 100) + '%';
 
-    const missing = [];
-    if (!done.a) missing.push('Stimmung');
-    if (!done.c) missing.push('Intimität');
-    $('#progress-text').textContent = `${count} von 4 Abschnitten ausgefüllt · ` +
+    const missing = required.filter(k => !done[k]).map(k => names[k]);
+    $('#progress-text').textContent = `${count} von ${sections.length} Abschnitten ausgefüllt · ` +
       (missing.length ? `Noch offen (Pflicht): ${missing.join(', ')}` : 'Bereit zum Speichern');
 
     for (const link of $$('.step-link', form)) {
       const step = link.dataset.step;
       const isDone = step === 'e' ? false : done[step];
+      const isRequired = required.includes(step);
       link.classList.toggle('done', !!isDone);
-      link.classList.toggle('required-open', (step === 'a' || step === 'c') && !isDone);
-      $('.step-state', link).textContent = isDone ? ' – ausgefüllt' : (step === 'a' || step === 'c') ? ' – Pflicht, noch offen' : ' – optional';
+      link.classList.toggle('required-open', isRequired && !isDone);
+      $('.step-state', link).textContent = isDone ? ' – ausgefüllt' : isRequired ? ' – Pflicht, noch offen' : ' – optional';
     }
   }
 
@@ -1189,7 +1408,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   }
 
   function clearErrors() {
-    for (const id of ['date-error', 'mood-error', 'intimacy-error']) {
+    for (const id of ['date-error', 'mood-error', 'desire-error', 'intimacy-error']) {
       const node = $('#' + id);
       node.hidden = true;
       node.textContent = '';
@@ -1204,6 +1423,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     editingId = null;
     dateInput.value = todayIso();
     $('#edit-banner').hidden = true;
+    applyMode('full');
     updateConditionalQuestions();
     clearErrors();
     updateDateDisplay();
@@ -1219,11 +1439,18 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       const input = form.querySelector(`input[name="${name}"][value="${value}"]`);
       if (input) input.checked = true;
     };
-    check('mood', entry.mood);
+    applyMode(entry.type === 'quick' ? 'quick' : 'full');
+    if (entry.mood) check('mood', entry.mood);
+    if (entry.desire) check('desire', String(entry.desire));
+    if (entry.frequencyWish) check('frequencyWish', entry.frequencyWish);
     entry.factors.forEach(f => check('factors', f));
     factorsNoteInput.value = entry.factorsNote;
-    check('intimacy', entry.intimacy);
+    entry.boosters.forEach(b => check('boosters', b));
+    $('#boost-note').value = entry.boostNote;
+    if (entry.initiativeWish) check('initiativeWish', entry.initiativeWish);
+    if (entry.intimacy) check('intimacy', entry.intimacy);
     updateConditionalQuestions();
+    if (entry.initiator) check('initiator', entry.initiator);
     if (entry.sexExperience) check('sexExperience', entry.sexExperience);
     if (entry.afterFeeling) check('afterFeeling', entry.afterFeeling);
     if (entry.pressure) check('pressure', entry.pressure);
@@ -1244,11 +1471,15 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     } else if (values.date > todayIso()) {
       errors.push({ field: 'date', target: dateInput, text: 'Das Datum liegt in der Zukunft. Bitte wähle heute oder einen vergangenen Tag.' });
     }
-    if (!values.mood) {
+    const quick = values.type === 'quick';
+    if (!quick && !values.mood) {
       errors.push({ field: 'mood', target: $('input[name="mood"]', form), text: 'Bitte wähle aus, wie du dich heute fühlst (Abschnitt A).' });
     }
-    if (!values.intimacy) {
-      errors.push({ field: 'intimacy', target: $('input[name="intimacy"]', form), text: 'Bitte wähle aus, was heute für euch passend war (Abschnitt C).' });
+    if (values.desire === null) {
+      errors.push({ field: 'desire', target: $('input[name="desire"]', form), text: `Bitte wähle aus, wie viel Lust du heute hast (Abschnitt ${quick ? 'B' : 'C'}).` });
+    }
+    if (!quick && !values.intimacy) {
+      errors.push({ field: 'intimacy', target: $('input[name="intimacy"]', form), text: 'Bitte wähle aus, was heute für euch passend war (Abschnitt D).' });
     }
     return errors;
   }
@@ -1604,13 +1835,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       type: 'button', className: 'entry-summary', 'aria-expanded': String(expanded), 'aria-controls': detailId,
       onclick: () => { expandedEntryId = expanded ? null : entry.id; renderHistory(); const again = document.querySelector(`[aria-controls="${detailId}"]`); if (again) again.focus(); }
     }, [
-      el('span', { className: 'entry-emoji', 'aria-hidden': 'true', text: mood ? mood.emoji : '' }),
+      el('span', { className: 'entry-emoji', 'aria-hidden': 'true', text: mood ? mood.emoji : '💭' }),
       el('span', { className: 'entry-main' }, [
         el('span', { className: 'entry-date' }, [
           formatDateShort(entry.date),
           sharedViewOpen ? el('span', { className: 'entry-person' + (entry.profile === 'B' ? ' b' : ''), text: nameOf(entry.profile) }) : null
         ]),
-        el('span', { className: 'entry-meta', text: `${mood ? mood.label : ''} · ${labelOf(INTIMACY, entry.intimacy)}` })
+        el('span', { className: 'entry-meta', text: entrySummaryText(entry) })
       ]),
       el('span', { className: 'entry-chevron', 'aria-hidden': 'true', text: '▾' })
     ]);
@@ -1620,19 +1851,42 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     return el('li', { className: 'card entry-item' }, children);
   }
 
+  const desireText = d => d ? `${d} von 5 – ${labelOf(DESIRE, String(d))}` : '';
+
+  /** Kurzzeile in der Liste, z. B. "Gut · Lust 4/5 · Sex hat stattgefunden". */
+  function entrySummaryText(entry) {
+    const parts = [];
+    if (entry.type === 'quick') parts.push('Schnell-Eintrag');
+    if (entry.mood) parts.push(labelOf(MOODS, entry.mood));
+    if (entry.desire) parts.push(`Lust ${entry.desire}/5`);
+    if (entry.intimacy) parts.push(labelOf(INTIMACY, entry.intimacy));
+    return parts.join(' · ');
+  }
+
   function renderEntryDetail(entry, detailId) {
+    const quick = entry.type === 'quick';
+    const mood = optionOf(MOODS, entry.mood);
     const rows = [
       ['Datum', formatDateLong(entry.date)],
       ['Profil', nameOf(entry.profile)],
-      ['Stimmung', (optionOf(MOODS, entry.mood) || {}).emoji + ' ' + labelOf(MOODS, entry.mood)],
-      ['Was beschäftigt mich', entry.factors.length ? entry.factors.map(f => labelOf(FACTORS, f)).join(', ') : '–'],
-      ['Ergänzung', entry.factorsNote || '–'],
-      ['Intimität', labelOf(INTIMACY, entry.intimacy)]
+      ['Art', quick ? 'Schnell-Eintrag' : 'Ausführlicher Eintrag'],
+      ['Stimmung', mood ? `${mood.emoji} ${mood.label}` : '–'],
+      ['Lust auf Sex', desireText(entry.desire) || 'keine Angabe'],
+      ['Gewünschte Häufigkeit', labelOf(FREQUENCY_WISH, entry.frequencyWish) || 'keine Angabe']
     ];
-    if (entry.intimacy === 'sex') rows.push(['Wie habe ich den Sex erlebt', labelOf(SEX_EXPERIENCE, entry.sexExperience) || '–']);
-    if (entry.intimacy !== 'kein_sex') rows.push(['Wie habe ich mich danach gefühlt', labelOf(AFTER_FEELING, entry.afterFeeling) || '–']);
-    rows.push(['Unter Druck gefühlt', labelOf(PRESSURE, entry.pressure) || 'keine Angabe']);
-    rows.push(['Was hätte mir gutgetan', entry.wish || '–']);
+    if (!quick) {
+      rows.push(['Was würde meine Lust fördern', entry.boosters.length ? entry.boosters.map(b => labelOf(BOOSTERS, b)).join(', ') : '–']);
+      rows.push(['Mein konkreter Wunsch', entry.boostNote || '–']);
+      rows.push(['Mehr Initiative gewünscht', labelOf(INITIATIVE_WISH, entry.initiativeWish) || 'keine Angabe']);
+      rows.push(['Was beschäftigt mich', entry.factors.length ? entry.factors.map(f => labelOf(FACTORS, f)).join(', ') : '–']);
+      rows.push(['Ergänzung', entry.factorsNote || '–']);
+      rows.push(['Intimität', labelOf(INTIMACY, entry.intimacy)]);
+      if (entry.intimacy !== 'kein_sex') rows.push(['Initiative', labelOf(INITIATOR, entry.initiator) || '–']);
+      if (entry.intimacy === 'sex') rows.push(['Wie habe ich den Sex erlebt', labelOf(SEX_EXPERIENCE, entry.sexExperience) || '–']);
+      if (entry.intimacy !== 'kein_sex') rows.push(['Wie habe ich mich danach gefühlt', labelOf(AFTER_FEELING, entry.afterFeeling) || '–']);
+      rows.push(['Unter Druck gefühlt', labelOf(PRESSURE, entry.pressure) || 'keine Angabe']);
+      rows.push(['Was hätte mir gutgetan', entry.wish || '–']);
+    }
     rows.push(['Gespeichert', formatTimestamp(entry.createdAt) + (entry.updatedAt !== entry.createdAt ? ` · geändert ${formatTimestamp(entry.updatedAt)}` : '')]);
 
     const dl = el('dl', { className: 'detail-list' });
@@ -1734,6 +1988,17 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   /** Unverbindliche Beobachtungen: zeigt nur, was gemeinsam eingetragen wurde – keine Ursachen. */
   function buildObservations(entries) {
     const observations = [];
+    // Durchschnittliche Lust mit / ohne bestimmten Punkt – nur eine Beobachtung, keine Ursache
+    const withDesire = entries.filter(e => e.desire);
+    const average = list => list.reduce((sum, e) => sum + e.desire, 0) / list.length;
+    for (const factor of FACTORS) {
+      const yes = withDesire.filter(e => e.factors.includes(factor.value));
+      const no = withDesire.filter(e => !e.factors.includes(factor.value));
+      if (yes.length >= 3 && no.length >= 3 && Math.abs(average(yes) - average(no)) >= 0.8) {
+        observations.push(`An Tagen mit „${factor.label}“ lag die angegebene Lust im Schnitt bei ${formatNumber(average(yes))} von 5, an den übrigen Tagen bei ${formatNumber(average(no))}.`);
+      }
+      if (observations.length >= 3) break;
+    }
     if (entries.length < 4) return observations;
     const factorStats = FACTORS
       .map(f => ({ factor: f, matching: entries.filter(e => e.factors.includes(f.value)) }))
@@ -1754,6 +2019,123 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       if (factor) observations.push(`In Einträgen, in denen etwas Druck angegeben wurde (${withPressure.length}), wurde „${factor.label}“ am häufigsten mit ausgewählt (${factor.count}×).`);
     }
     return observations;
+  }
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svg(tag, attrs = {}, children = []) {
+    const node = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
+    for (const c of [].concat(children)) if (c) node.append(c);
+    return node;
+  }
+  const formatNumber = n => n.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const shortDate = iso => parseIsoDate(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+
+  /**
+   * Lust-Verlauf als schlichtes Liniendiagramm (eine Person, Skala 1–5).
+   * Antippen/Hover/Fokus eines Punkts zeigt Datum und Wert; dazu eine Listenansicht für Screenreader.
+   */
+  function desireChart(points) {
+    const W = 320, H = 132, padL = 26, padR = 10, padT = 10, padB = 22;
+    const x = i => points.length === 1 ? (padL + W - padR) / 2 : padL + i * (W - padL - padR) / (points.length - 1);
+    const y = v => padT + (5 - v) * (H - padT - padB) / 4;
+    const tip = el('p', { className: 'chart-tip', 'aria-live': 'polite', text: 'Tippe auf einen Punkt für Details.' });
+    const describe = e => `${formatDateShort(e.date)}: Lust ${desireText(e.desire)}${e.type === 'quick' ? ' (Schnell-Eintrag)' : ''}`;
+
+    const parts = [];
+    for (const level of [1, 3, 5]) {
+      parts.push(svg('line', { class: 'chart-grid', x1: padL, x2: W - padR, y1: y(level), y2: y(level) }));
+      const label = svg('text', { class: 'chart-axis-label', x: padL - 8, y: y(level) + 3.5, 'text-anchor': 'end' });
+      label.textContent = level;
+      parts.push(label);
+    }
+    const first = svg('text', { class: 'chart-axis-label', x: x(0), y: H - 4, 'text-anchor': points.length === 1 ? 'middle' : 'start' });
+    first.textContent = shortDate(points[0].date);
+    parts.push(first);
+    if (points.length > 1) {
+      const last = svg('text', { class: 'chart-axis-label', x: x(points.length - 1), y: H - 4, 'text-anchor': 'end' });
+      last.textContent = shortDate(points[points.length - 1].date);
+      parts.push(last);
+      parts.push(svg('polyline', { class: 'chart-line', points: points.map((e, i) => `${x(i)},${y(e.desire)}`).join(' ') }));
+    }
+    points.forEach((e, i) => {
+      const hit = svg('circle', { class: 'chart-hit', cx: x(i), cy: y(e.desire), r: 12, tabindex: 0, role: 'img', 'aria-label': describe(e) });
+      const show = () => { tip.textContent = describe(e); };
+      hit.addEventListener('mouseenter', show);
+      hit.addEventListener('focus', show);
+      hit.addEventListener('click', show);
+      parts.push(hit, svg('circle', { class: 'chart-dot', cx: x(i), cy: y(e.desire), r: 4, 'pointer-events': 'none' }));
+    });
+    const chart = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'group', 'aria-label': `Lust-Verlauf, ${points.length} Einträge, Skala 1 bis 5` }, parts);
+    const table = el('details', { className: 'chart-table' }, [
+      el('summary', { text: 'Als Liste anzeigen' }),
+      el('ul', {}, points.slice().reverse().map(e => el('li', { text: describe(e) })))
+    ]);
+    return el('div', { className: 'chart-wrap' }, [chart, tip, table]);
+  }
+
+  function statTile(value, label) {
+    return el('div', { className: 'stat-tile' }, [el('span', { className: 'tile-value', text: value }), el('span', { className: 'tile-label', text: label })]);
+  }
+
+  /** Eigener Bereich "Sex & Lust": Kennzahlen, Verlauf pro Person, Verteilungen. Keine Ziele, keine Rangliste. */
+  function buildSexOverview(entries, fullEntries) {
+    const withDesire = entries.filter(e => e.desire);
+    const intimacyDays = fullEntries.length;
+    const sexCount = fullEntries.filter(e => e.intimacy === 'sex').length;
+    const closeCount = fullEntries.filter(e => e.intimacy === 'naehe').length;
+    const avg = withDesire.length ? withDesire.reduce((sum, e) => sum + e.desire, 0) / withDesire.length : null;
+    const profilesInScope = PROFILES.filter(p => entries.some(e => e.profile === p));
+
+    const tiles = [
+      statTile(avg === null ? '–' : `${formatNumber(avg)} / 5`, profilesInScope.length > 1 ? 'Ø Lust (beide zusammen)' : 'Ø Lust auf Sex'),
+      statTile(String(sexCount), intimacyDays ? `× Sex bei ${intimacyDays} ${intimacyDays === 1 ? 'ausführlichem Eintrag' : 'ausführlichen Einträgen'}` : '× Sex eingetragen'),
+      statTile(String(closeCount), '× Kuscheln / Küssen / Nähe')
+    ];
+    if (profilesInScope.length === 1) {
+      const latestWish = entries.find(e => e.frequencyWish); // Liste ist neueste zuerst sortiert
+      if (latestWish) tiles.push(statTile(labelOf(FREQUENCY_WISH, latestWish.frequencyWish), 'zuletzt gewünschte Häufigkeit'));
+    }
+
+    const parts = [el('h3', { text: 'Sex & Lust' }), el('div', { className: 'stat-tiles' }, tiles)];
+
+    // Verlauf: je Person ein eigenes Diagramm (kein Vergleich in einer Grafik)
+    for (const profile of profilesInScope) {
+      const points = withDesire.filter(e => e.profile === profile)
+        .slice().sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt))
+        .slice(-30);
+      parts.push(el('h4', { className: 'stat-sub', text: profilesInScope.length > 1 ? `Lust-Verlauf – ${nameOf(profile)}` : 'Lust-Verlauf' }));
+      parts.push(points.length ? desireChart(points) : el('p', { className: 'muted', text: 'Noch keine Angaben zur Lust.' }));
+    }
+
+    parts.push(el('h4', { className: 'stat-sub', text: 'Wie viel Lust wurde angegeben?' }));
+    parts.push(barList(DESIRE.map(d => ({ label: `${d.value} – ${d.label}`, count: withDesire.filter(e => String(e.desire) === d.value).length })), withDesire.length));
+
+    const withFrequency = entries.filter(e => e.frequencyWish);
+    parts.push(el('h4', { className: 'stat-sub', text: 'Wie oft wäre schön?' }));
+    parts.push(withFrequency.length
+      ? barList(countBy(withFrequency, FREQUENCY_WISH, (e, v) => e.frequencyWish === v), withFrequency.length)
+      : el('p', { className: 'muted', text: 'Noch keine Angaben.' }));
+
+    parts.push(el('h4', { className: 'stat-sub', text: 'Was würde die Lust fördern?' }));
+    parts.push(barList(countBy(fullEntries, BOOSTERS, (e, v) => e.boosters.includes(v)).sort((a, b) => b.count - a.count), fullEntries.length, { hideZero: true }));
+
+    const withInitiator = fullEntries.filter(e => e.initiator);
+    if (withInitiator.length) {
+      parts.push(el('h4', { className: 'stat-sub', text: 'Wer hat die Initiative ergriffen?' }));
+      parts.push(barList(countBy(withInitiator, INITIATOR, (e, v) => e.initiator === v), withInitiator.length));
+    }
+    const withInitiativeWish = fullEntries.filter(e => e.initiativeWish);
+    if (withInitiativeWish.length) {
+      parts.push(el('h4', { className: 'stat-sub', text: 'Mehr Initiative vom Gegenüber gewünscht?' }));
+      parts.push(barList(countBy(withInitiativeWish, INITIATIVE_WISH, (e, v) => e.initiativeWish === v), withInitiativeWish.length));
+    }
+    const withExperience = fullEntries.filter(e => e.sexExperience);
+    if (withExperience.length) {
+      parts.push(el('h4', { className: 'stat-sub', text: 'Wie wurde der Sex erlebt?' }));
+      parts.push(barList(countBy(withExperience, SEX_EXPERIENCE, (e, v) => e.sexExperience === v), withExperience.length));
+    }
+    return el('div', { className: 'card stat-block' }, parts);
   }
 
   function renderStats() {
@@ -1781,34 +2163,42 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       el('p', { className: 'muted small', style: 'margin:0', text: `Ausgewertet für: ${scopeLabel}` })
     ]));
 
+    const fullEntries = entries.filter(e => e.type !== 'quick');
+    const moodEntries = entries.filter(e => e.mood);
+    const fullTotal = fullEntries.length;
+
+    blocks.push(buildSexOverview(entries, fullEntries));
+
     blocks.push(el('div', { className: 'card stat-block' }, [
       el('h3', { text: 'Welche Stimmungen wurden ausgewählt?' }),
-      barList(countBy(entries, MOODS, (e, v) => e.mood === v), total)
+      barList(countBy(moodEntries, MOODS, (e, v) => e.mood === v), moodEntries.length)
     ]));
 
-    blocks.push(el('div', { className: 'card stat-block' }, [
-      el('h3', { text: 'Was wurde häufig genannt?' }),
-      el('p', { className: 'muted small', text: 'Anteil der Einträge, in denen der Punkt ausgewählt wurde (Mehrfachauswahl möglich).' }),
-      barList(countBy(entries, FACTORS, (e, v) => e.factors.includes(v)).sort((a, b) => b.count - a.count), total, { hideZero: true })
-    ]));
+    if (fullTotal) {
+      blocks.push(el('div', { className: 'card stat-block' }, [
+        el('h3', { text: 'Was wurde häufig genannt?' }),
+        el('p', { className: 'muted small', text: 'Anteil der ausführlichen Einträge, in denen der Punkt ausgewählt wurde (Mehrfachauswahl möglich).' }),
+        barList(countBy(fullEntries, FACTORS, (e, v) => e.factors.includes(v)).sort((a, b) => b.count - a.count), fullTotal, { hideZero: true })
+      ]));
 
-    blocks.push(el('div', { className: 'card stat-block' }, [
-      el('h3', { text: 'Was war passend?' }),
-      barList(countBy(entries, INTIMACY, (e, v) => e.intimacy === v), total)
-    ]));
+      blocks.push(el('div', { className: 'card stat-block' }, [
+        el('h3', { text: 'Was war passend?' }),
+        barList(countBy(fullEntries, INTIMACY, (e, v) => e.intimacy === v), fullTotal)
+      ]));
 
-    const answeredPressure = entries.filter(e => e.pressure);
-    blocks.push(el('div', { className: 'card stat-block' }, [
-      el('h3', { text: 'Wurde Druck empfunden?' }),
-      answeredPressure.length
-        ? barList(countBy(answeredPressure, PRESSURE, (e, v) => e.pressure === v), answeredPressure.length)
-        : el('p', { className: 'muted', text: 'Diese freiwillige Frage wurde in der Auswahl nicht beantwortet.' }),
-      total - answeredPressure.length > 0
-        ? el('p', { className: 'muted small', style: 'margin:.8rem 0 0', text: `${total - answeredPressure.length} ${total - answeredPressure.length === 1 ? 'Eintrag' : 'Einträge'} ohne Angabe.` })
-        : null
-    ]));
+      const answeredPressure = fullEntries.filter(e => e.pressure);
+      blocks.push(el('div', { className: 'card stat-block' }, [
+        el('h3', { text: 'Wurde Druck empfunden?' }),
+        answeredPressure.length
+          ? barList(countBy(answeredPressure, PRESSURE, (e, v) => e.pressure === v), answeredPressure.length)
+          : el('p', { className: 'muted', text: 'Diese freiwillige Frage wurde in der Auswahl nicht beantwortet.' }),
+        fullTotal - answeredPressure.length > 0
+          ? el('p', { className: 'muted small', style: 'margin:.8rem 0 0', text: `${fullTotal - answeredPressure.length} ${fullTotal - answeredPressure.length === 1 ? 'Eintrag' : 'Einträge'} ohne Angabe.` })
+          : null
+      ]));
+    }
 
-    const observations = buildObservations(entries);
+    const observations = buildObservations(fullEntries);
     blocks.push(el('div', { className: 'card stat-block' }, [
       el('h3', { text: 'Unverbindliche Beobachtungen' }),
       el('div', { className: 'notice', style: 'margin-bottom:.8rem' }, [
@@ -2001,6 +2391,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (await leaveProfile()) { $('#profile-picker h2').setAttribute('tabindex', '-1'); $('#profile-picker h2').focus(); }
   });
   $('#cancel-edit-btn').addEventListener('click', cancelEdit);
+  $('#mode-full').addEventListener('click', () => switchMode('full'));
+  $('#mode-quick').addEventListener('click', () => switchMode('quick'));
 
   form.addEventListener('submit', handleSubmit);
   form.addEventListener('change', event => {
