@@ -148,6 +148,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .partner-signal strong { display: block; font-size: 1.05rem; }
 .partner-signal p { margin: .2rem 0 0; white-space: pre-wrap; word-break: break-word; }
 
+/* Zuklappbare Einstellungs-Karten */
+details.settings-collapsible > summary.settings-summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: .6rem; min-height: 44px;
+}
+details.settings-collapsible > summary::-webkit-details-marker { display: none; }
+details.settings-collapsible > summary h2 { margin: 0; flex: 1; }
+details.settings-collapsible[open] > summary { margin-bottom: .75rem; }
+.badge.on { background: var(--sel-bg); color: var(--sel-text); border-color: transparent; }
+.badge.warn { background: var(--rose-soft); color: var(--rose-strong); border-color: transparent; }
+.pw-change { margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px dashed var(--line); }
+.pw-change h3 { font-size: 1.05rem; margin-bottom: .4rem; }
+
 /* Sync-Status */
 .sync-status { font-size: .9rem; color: var(--text-muted); margin: .9rem 0 0; }
 .sync-status.error { color: var(--rose-strong); font-weight: 600; }
@@ -913,8 +925,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       </form>
     </div>
 
-    <div class="card settings-card" id="sync-card">
-      <h2>Sync zwischen euren Handys</h2>
+    <details class="card settings-card settings-collapsible" id="sync-card">
+      <summary class="settings-summary">
+        <h2>Sync zwischen euren Handys</h2>
+        <span class="badge" id="sync-badge">aus</span>
+        <span class="collapse-icon" aria-hidden="true"></span>
+      </summary>
+      <div class="collapsible-body">
       <p class="muted">Gleicht Einträge, Wunschliste, Lust-Signale und Einstellungen über ein <strong>privates GitHub-Repository</strong> ab. Alles wird vorher auf dem Handy mit eurem Sync-Passwort verschlüsselt (AES-256) – GitHub sieht nur unlesbare Daten.</p>
       <form id="sync-form" novalidate autocomplete="off">
         <label class="field-label" for="sync-repo">Privates Repository <span class="field-hint">(besitzer/name)</span></label>
@@ -932,10 +949,31 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         </div>
       </form>
       <p class="sync-status" id="sync-status" aria-live="polite"></p>
-    </div>
 
-    <div class="card settings-card">
-      <h2>Push (ntfy)</h2>
+      <div id="sync-pw-change" class="pw-change" hidden>
+        <h3>Sync-Passwort ändern</h3>
+        <p class="muted small">Die Daten im Repository werden mit dem neuen Passwort neu verschlüsselt. Danach auf dem anderen Handy das neue Passwort eintragen und „Speichern &amp; synchronisieren“ tippen.</p>
+        <form id="sync-pw-form" novalidate autocomplete="off">
+          <label class="field-label" for="sync-pw-new">Neues Sync-Passwort <span class="field-hint">(mind. 8 Zeichen)</span></label>
+          <input id="sync-pw-new" class="input" type="password" maxlength="200" autocomplete="new-password" spellcheck="false">
+          <label class="field-label" for="sync-pw-repeat">Neues Passwort wiederholen</label>
+          <input id="sync-pw-repeat" class="input" type="password" maxlength="200" autocomplete="new-password" spellcheck="false">
+          <p class="field-error" id="sync-pw-error" role="alert" hidden></p>
+          <div class="btn-row" style="margin-top:1rem">
+            <button type="submit" class="btn" id="sync-pw-btn">Passwort ändern</button>
+          </div>
+        </form>
+      </div>
+      </div>
+    </details>
+
+    <details class="card settings-card settings-collapsible" id="push-card">
+      <summary class="settings-summary">
+        <h2>Push (ntfy)</h2>
+        <span class="badge" id="push-badge">aus</span>
+        <span class="collapse-icon" aria-hidden="true"></span>
+      </summary>
+      <div class="collapsible-body">
       <p class="muted">Sendet das Lust-Signal als Push-Benachrichtigung aufs Handy der anderen Person – über euren Server <strong>ntfy.chaoten.online</strong>. Die andere Person abonniert dafür in der ntfy-App ihr Topic.</p>
       <form id="push-form" novalidate autocomplete="off">
         <label class="field-label" for="push-token">Zugangstoken</label>
@@ -961,7 +999,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       <div class="notice" style="margin:1rem 0 0">
         <p>Das Token wird nur in diesem Browser gespeichert – nicht im Backup-Export und nicht im (öffentlichen) GitHub-Code. Tipp: Ein Token, das nur in diese beiden Topics schreiben darf.</p>
       </div>
-    </div>
+      </div>
+    </details>
 
     <div class="card settings-card">
       <h2>Selbstbefriedigung</h2>
@@ -2210,6 +2249,13 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#push-topic-A').value = pushConfig.topics.A;
     $('#push-topic-B').value = pushConfig.topics.B;
     $('#push-error').hidden = true;
+    updatePushBadge();
+  }
+  function updatePushBadge() {
+    const active = !!(pushConfig.token && (pushConfig.topics.A || pushConfig.topics.B));
+    const badge = $('#push-badge');
+    badge.textContent = active ? 'aktiv' : 'aus';
+    badge.className = 'badge' + (active ? ' on' : '');
   }
 
   function readPushForm() {
@@ -2238,6 +2284,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       return false;
     }
     pushConfig = config;
+    updatePushBadge();
     showPushError('');
     toast('Push-Einstellungen gespeichert.');
     return true;
@@ -2313,7 +2360,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   function syncErrorText(err) {
     const status = err && err.status;
     switch (err && err.code) {
-      case 'passphrase': return 'Die Daten im Repository lassen sich nicht entschlüsseln – ist das Sync-Passwort auf beiden Handys gleich?';
+      case 'passphrase': return 'Die Daten im Repository lassen sich nicht entschlüsseln. Wurde das Sync-Passwort auf dem anderen Handy geändert? Dann hier das neue Passwort eintragen und „Speichern & synchronisieren“ tippen.';
       case 'format': return 'Die Sync-Datei im Repository hat ein unbekanntes Format. Es wurde nichts überschrieben.';
       case 'conflict': return 'Gleichzeitige Änderungen – bitte gleich noch einmal synchronisieren.';
       case 'network': return 'Keine Verbindung zu GitHub. Bitte Internetverbindung prüfen.';
@@ -2363,10 +2410,10 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     return key;
   }
 
-  async function encryptData(data, existingSalt, existingIterations) {
+  async function encryptData(data, existingSalt, existingIterations, passphrase = syncConfig.passphrase) {
     const salt = existingSalt || bytesToBase64(crypto.getRandomValues(new Uint8Array(16)));
     const iterations = existingIterations || PBKDF2_ITERATIONS;
-    const key = await deriveKey(syncConfig.passphrase, salt, iterations);
+    const key = await deriveKey(passphrase, salt, iterations);
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const packed = await gzip(new TextEncoder().encode(JSON.stringify(data)));
     const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, packed.bytes));
@@ -2495,6 +2542,10 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     const node = $('#sync-status');
     node.textContent = text;
     node.className = 'sync-status' + (state ? ' ' + state : '');
+    const badge = $('#sync-badge');
+    badge.textContent = !syncReady() ? 'aus' : state === 'error' ? 'Problem' : 'aktiv';
+    badge.className = 'badge' + (!syncReady() ? '' : state === 'error' ? ' warn' : ' on');
+    $('#sync-pw-change').hidden = !syncReady();
     const footer = $('#footer-sync');
     if (!syncReady()) footer.textContent = 'läuft lokal in deinem Browser';
     else if (state === 'error') footer.textContent = 'Sync-Problem – siehe Einstellungen';
@@ -2621,6 +2672,78 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (!saveSyncConfig()) { syncConfig = previous; showSyncError('Die Einstellungen konnten nicht gespeichert werden.'); return; }
     const result = await runSync({ manual: true });
     if (result.ok) toast('Sync eingerichtet ✓');
+  }
+
+  /**
+   * Sync-Passwort ändern: aktuellen Stand lesen (altes Passwort), zusammenführen und mit
+   * neuem Passwort + neuem Salt verschlüsselt zurückschreiben. Erst danach lokal umstellen.
+   */
+  async function changeSyncPassword(event) {
+    event.preventDefault();
+    const errorNode = $('#sync-pw-error');
+    const showError = text => { errorNode.textContent = text; errorNode.hidden = !text; };
+    const newPass = $('#sync-pw-new').value;
+    const repeat = $('#sync-pw-repeat').value;
+    if (!syncReady()) { showError('Bitte zuerst den Sync einrichten.'); return; }
+    if (newPass.length < 8) { showError('Das neue Passwort braucht mindestens 8 Zeichen.'); $('#sync-pw-new').focus(); return; }
+    if (newPass !== repeat) { showError('Die beiden Passwörter stimmen nicht überein.'); $('#sync-pw-repeat').focus(); return; }
+    if (newPass === syncConfig.passphrase) { showError('Das neue Passwort ist dasselbe wie das bisherige.'); return; }
+    showError('');
+    const ok = await confirmAction('Sync-Passwort ändern?',
+      ['Die Daten im Repository werden mit dem neuen Passwort neu verschlüsselt.',
+        'Auf dem anderen Handy klappt der Sync danach erst wieder, wenn dort das neue Passwort eingetragen ist. Bitte das neue Passwort gut merken.'],
+      'Passwort ändern');
+    if (!ok) return;
+    if (syncRunning) { showError('Gerade läuft ein Abgleich – bitte gleich noch einmal versuchen.'); return; }
+
+    const btn = $('#sync-pw-btn');
+    btn.disabled = true;
+    syncRunning = true;
+    clearTimeout(syncTimer);
+    setSyncStatus('Passwort wird geändert …', '');
+    try {
+      let done = false;
+      for (let attempt = 0; attempt < 4 && !done; attempt++) {
+        const remote = await ghRead();
+        let merged = appData;
+        if (remote.exists) {
+          const normalized = normalizeData(await decryptData(remote.envelope)); // mit altem Passwort
+          if (!normalized.ok) throw new SyncError('format');
+          merged = mergeData(appData, normalized.data);
+        }
+        // Neues Salt → neuer Schlüssel
+        const envelope = await encryptData(merged, '', PBKDF2_ITERATIONS, newPass);
+        const write = await ghWrite(envelope, remote.exists ? remote.sha : '');
+        if (write.conflict) continue;
+        if (canonical(merged) !== canonical(appData)) {
+          appData = merged;
+          persistLocal();
+          refreshAfterRemoteChange();
+        }
+        done = true;
+      }
+      if (!done) throw new SyncError('conflict');
+      syncConfig.passphrase = newPass;
+      syncConfig.lastSync = new Date().toISOString();
+      keyCache.clear();
+      saveSyncConfig();
+      $('#sync-pass').value = newPass;
+      $('#sync-pw-new').value = '';
+      $('#sync-pw-repeat').value = '';
+      setSyncStatus(describeLastSync(), 'ok');
+      showInfo('Passwort geändert', ['Die Daten sind jetzt mit dem neuen Passwort verschlüsselt.',
+        'Auf dem anderen Handy: ⚙️ → Sync → neues Passwort eintragen → „Speichern & synchronisieren“.']);
+    } catch (err) {
+      const error = err instanceof SyncError ? err : new SyncError('unknown');
+      const text = error.code === 'passphrase'
+        ? 'Das bisherige Passwort passt nicht mehr zu den Daten im Repository – vermutlich wurde es auf dem anderen Handy schon geändert. Trag zuerst oben das aktuelle Passwort ein.'
+        : syncErrorText(error);
+      showError(text);
+      setSyncStatus(syncErrorText(error), 'error');
+    } finally {
+      syncRunning = false;
+      btn.disabled = false;
+    }
   }
 
   async function clearSyncSettings() {
@@ -3737,6 +3860,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     runSync({ manual: true });
   });
   $('#sync-clear-btn').addEventListener('click', clearSyncSettings);
+  $('#sync-pw-form').addEventListener('submit', changeSyncPassword);
   $('#push-test-btn').addEventListener('click', testPush);
   $('#push-clear-btn').addEventListener('click', clearPushConfig);
   $('#wish-form').addEventListener('submit', addWish);

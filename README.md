@@ -82,6 +82,8 @@ Damit ihr beide auf euren **eigenen Handys** dieselben Einträge, die Wunschlist
 - Bei gleichzeitigen Änderungen gewinnt pro Eintrag die neuere Änderung. Löschungen werden übertragen.
 - Die Daten bleiben zusätzlich lokal auf jedem Handy. Ohne Internet funktioniert die App weiter und gleicht später ab.
 - Token und Sync-Passwort werden nur im Browser des Geräts gespeichert, nie im Backup-Export und nie im öffentlichen App-Repository.
+- **Sync-Passwort ändern:** ⚙️ → Sync → „Sync-Passwort ändern“. Die Datei im Repository wird mit dem neuen Passwort neu verschlüsselt. Auf dem anderen Handy erscheint dann ein Hinweis: Dort das neue Passwort eintragen und „Speichern & synchronisieren“ tippen.
+- **Token und Sync-Passwort nie im Repository speichern** (auch nicht in einer `.env`). Das Passwort neben den verschlüsselten Daten hebt die Verschlüsselung auf. Besser ist ein Passwort-Manager.
 - **Sync-Passwort vergessen = die Datei im Repository ist nicht mehr lesbar.** Die lokalen Daten auf den Handys bleiben erhalten.
 - GitHub versioniert jede Änderung. Ältere Stände lassen sich so notfalls wiederherstellen.
 
