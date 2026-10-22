@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Privatsphäre: keine Suchmaschinen-Indexierung, keine Referrer-Weitergabe -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<!-- Sicherheitsrichtlinie: Die Seite darf keinerlei Netzwerkverbindungen aufbauen (connect-src 'none') -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta name="theme-color" content="#f6f1e9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1c1a" media="(prefers-color-scheme: dark)">
+<title>Our Mood</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%238aa287'/%3E%3Ccircle cx='32' cy='32' r='14' fill='%23f6f1e9'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   Farb- und Gestaltungs-Tokens
+   ============================================================ */
+:root {
+  --bg: #f6f1e9;
+  --bg-soft: #efe7db;
+  --card: #fffdf9;
+  --line: #e4d9c9;
+  --text: #3a322d;
+  --text-muted: #6d625a;
+  --sage: #8aa287;
+  --sage-strong: #4f6a4c;
+  --sage-soft: #e5ece1;
+  --rose: #d8a7a0;
+  --rose-strong: #95574f;
+  --rose-soft: #f6e6e2;
+  --sand: #e9dfd0;
+  --focus: #4f6a4c;
+  --shadow: 0 1px 2px rgba(58, 50, 45, .05), 0 6px 24px rgba(58, 50, 45, .06);
+  --radius: 20px;
+  --radius-sm: 14px;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1f1c1a;
+    --bg-soft: #282421;
+    --card: #2b2724;
+    --line: #3e3833;
+    --text: #f1ebe3;
+    --text-muted: #bdb2a7;
+    --sage: #9db79a;
+    --sage-strong: #b9d1b5;
+    --sage-soft: #33402f;
+    --rose: #c99189;
+    --rose-strong: #e9b3ab;
+    --rose-soft: #47302c;
+    --sand: #3a342f;
+    --focus: #b9d1b5;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+
+/* ============================================================
+   Grundlayout
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.25; margin: 0; }
+p { margin: 0 0 .75rem; }
+button, input, select, textarea { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: absolute; left: 1rem; top: -4rem; z-index: 100;
+  background: var(--card); color: var(--text); padding: .75rem 1rem; border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.skip-link:focus { top: 1rem; }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 8px; }
+
+.container { width: 100%; max-width: 760px; margin: 0 auto; padding: 0 16px; }
+
+/* Kopfbereich */
+.app-header { padding: 2.25rem 0 1rem; text-align: center; }
+.app-title { font-size: clamp(2.1rem, 6vw, 2.8rem); letter-spacing: .01em; }
+.app-subtitle { color: var(--text-muted); margin: .4rem auto 0; max-width: 32ch; font-style: italic; font-family: var(--font-display); }
+
+/* Navigation */
+.main-nav {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  padding: .6rem 0;
+  border-bottom: 1px solid transparent;
+}
+.nav-list {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  list-style: none; margin: 0; padding: 4px;
+  background: var(--bg-soft); border-radius: 999px; border: 1px solid var(--line);
+}
+.nav-btn {
+  width: 100%; min-height: 44px; border: 0; border-radius: 999px; cursor: pointer;
+  background: transparent; color: var(--text-muted); font-size: .9rem; font-weight: 600;
+  padding: .4rem .3rem; transition: background .2s, color .2s;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn[aria-current="page"] { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+@media (max-width: 420px) { .nav-btn { font-size: .8rem; } }
+
+main { padding: 1.25rem 0 4rem; }
+.view { animation: fadeIn .35s ease; }
+.view-title { font-size: 1.6rem; margin-bottom: .35rem; }
+.view-intro { color: var(--text-muted); margin-bottom: 1.25rem; }
+.view-title:focus { outline: none; }
+
+/* Karten */
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 1.35rem; margin-bottom: 1rem; box-shadow: var(--shadow);
+}
+@media (min-width: 600px) { .card { padding: 1.75rem; } }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 48px; padding: .7rem 1.3rem; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid var(--line); background: var(--card); color: var(--text);
+  font-weight: 600; text-decoration: none; transition: transform .15s, background .2s, border-color .2s;
+}
+.btn:hover { border-color: var(--sage); }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-primary { background: var(--sage-strong); border-color: var(--sage-strong); color: #fff; }
+@media (prefers-color-scheme: dark) { .btn-primary { color: #1f1c1a; } }
+.btn-primary:hover { filter: brightness(1.06); border-color: var(--sage-strong); }
+.btn-danger { color: var(--rose-strong); border-color: var(--rose); background: var(--rose-soft); }
+.btn-danger:hover { border-color: var(--rose-strong); }
+.btn-small { min-height: 40px; padding: .4rem .95rem; font-size: .92rem; }
+.btn-link {
+  background: none; border: 0; padding: .3rem .2rem; min-height: 44px; cursor: pointer;
+  color: var(--sage-strong); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.btn-row { display: flex; flex-wrap: wrap; gap: .6rem; }
+.btn-block { width: 100%; }
+
+/* Hinweise */
+.notice {
+  border-radius: var(--radius-sm); padding: .9rem 1rem; margin-bottom: 1rem;
+  background: var(--sage-soft); border: 1px solid color-mix(in srgb, var(--sage) 45%, transparent);
+  font-size: .97rem;
+}
+.notice-warm { background: var(--rose-soft); border-color: color-mix(in srgb, var(--rose) 50%, transparent); }
+.notice strong { display: block; margin-bottom: .2rem; }
+.notice p:last-child { margin-bottom: 0; }
+.muted { color: var(--text-muted); }
+.small { font-size: .9rem; }
+
+/* ============================================================
+   Profilauswahl
+   ============================================================ */
+.profile-picker h2 { font-size: 1.4rem; margin-bottom: .3rem; }
+.profile-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: 1rem; }
+.profile-btn {
+  display: flex; flex-direction: column; align-items: center; gap: .55rem;
+  padding: 1.3rem .8rem; min-height: 130px; cursor: pointer;
+  border-radius: var(--radius); border: 1.5px solid var(--line); background: var(--bg);
+  transition: border-color .2s, transform .15s, background .2s;
+}
+.profile-btn:hover { border-color: var(--sage); background: var(--sage-soft); }
+.profile-btn:active { transform: scale(.98); }
+.avatar {
+  width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+  font-family: var(--font-display); font-size: 1.35rem; font-weight: 700;
+  background: var(--sage-soft); color: var(--sage-strong);
+}
+.avatar.b { background: var(--rose-soft); color: var(--rose-strong); }
+.profile-btn .profile-name { font-weight: 600; word-break: break-word; text-align: center; }
+
+.profile-bar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; padding: 1rem 1.25rem; }
+.profile-bar .who { display: flex; align-items: center; gap: .75rem; }
+.profile-bar .avatar { width: 42px; height: 42px; font-size: 1.1rem; }
+
+/* ============================================================
+   Formular
+   ============================================================ */
+.date-card label { font-weight: 600; display: block; margin-bottom: .15rem; }
+.date-display { font-family: var(--font-display); font-size: 1.35rem; margin-bottom: .75rem; }
+.input, .textarea, .select {
+  width: 100%; min-height: 48px; padding: .7rem .9rem; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--line); background: var(--bg); transition: border-color .2s;
+}
+.input:hover, .textarea:hover, .select:hover { border-color: var(--sage); }
+.input:focus-visible, .textarea:focus-visible, .select:focus-visible { outline-offset: 1px; }
+.textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+.input[type="date"] { max-width: 260px; }
+.field-label { display: block; font-weight: 600; margin: 1.1rem 0 .4rem; }
+.field-hint { font-weight: 400; color: var(--text-muted); font-size: .9rem; }
+.field-error { color: var(--rose-strong); font-weight: 600; font-size: .95rem; margin: .6rem 0 0; }
+.field-error::before { content: "• "; }
+
+/* Fortschritt */
+.progress {
+  position: sticky; top: 66px; z-index: 10; padding: .9rem 1.1rem; margin-bottom: 1rem;
+}
+.progress-track { height: 8px; border-radius: 999px; background: var(--sand); overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--sage), var(--sage-strong)); border-radius: 999px; transition: width .4s ease; }
+.progress-text { font-size: .88rem; color: var(--text-muted); margin: .5rem 0 .55rem; }
+.steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; list-style: none; padding: 0; margin: 0; }
+.step-link {
+  display: flex; flex-direction: column; align-items: center; gap: .15rem; text-decoration: none;
+  color: var(--text-muted); font-size: .76rem; padding: .2rem 0; border-radius: 10px; min-height: 44px;
+}
+.step-dot {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .8rem;
+  border: 1.5px solid var(--line); background: var(--bg); transition: all .25s;
+}
+.step-link.done .step-dot { background: var(--sage-strong); border-color: var(--sage-strong); color: var(--card); }
+.step-link.required-open .step-dot { border-color: var(--rose); }
+@media (max-width: 380px) { .step-label { display: none; } }
+
+/* Abschnitte */
+.form-section { scroll-margin-top: 190px; }
+.section-head { display: flex; align-items: center; gap: .7rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.section-tag {
+  width: 34px; height: 34px; flex: none; border-radius: 10px; display: grid; place-items: center;
+  background: var(--sand); font-weight: 700; font-size: .95rem;
+}
+.section-head h2 { font-size: 1.3rem; flex: 1; min-width: 12ch; }
+.badge { font-size: .75rem; font-weight: 600; padding: .2rem .6rem; border-radius: 999px; background: var(--bg-soft); color: var(--text-muted); border: 1px solid var(--line); }
+.badge.required { background: var(--sage-soft); color: var(--sage-strong); border-color: transparent; }
+
+fieldset.question-group { border: 0; margin: 0; padding: 0; min-width: 0; }
+.question { font-weight: 600; font-size: 1.05rem; padding: 0; margin-bottom: .75rem; }
+.question-hint { color: var(--text-muted); font-size: .93rem; margin: -.35rem 0 .85rem; }
+.subquestion { margin-top: 1.4rem; padding-top: 1.25rem; border-top: 1px dashed var(--line); animation: reveal .35s ease; }
+
+/* Auswahl-Karten (Radio/Checkbox optisch versteckt, aber fokussierbar) */
+.option { position: relative; display: block; cursor: pointer; }
+.option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.option-body {
+  display: flex; align-items: center; gap: .7rem; min-height: 54px; padding: .75rem 1rem;
+  border-radius: var(--radius-sm); border: 1.5px solid var(--line); background: var(--bg);
+  transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
+}
+.option:hover .option-body { border-color: var(--sage); }
+.option input:focus-visible + .option-body { outline: 3px solid var(--focus); outline-offset: 3px; }
+.option input:checked + .option-body {
+  border-color: var(--sage-strong); background: var(--sage-soft);
+  box-shadow: inset 0 0 0 1px var(--sage-strong);
+}
+.option:active .option-body { transform: scale(.985); }
+.option-emoji { font-size: 1.5rem; line-height: 1; }
+.option-check {
+  margin-left: auto; width: 22px; height: 22px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--line); display: grid; place-items: center; font-size: .8rem; color: transparent;
+  transition: all .2s;
+}
+.option input:checked + .option-body .option-check { background: var(--sage-strong); border-color: var(--sage-strong); color: var(--card); }
+
+.mood-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: .6rem; }
+.mood-grid .option-body { flex-direction: column; justify-content: center; text-align: center; min-height: 112px; gap: .4rem; font-weight: 600; }
+.mood-grid .option-emoji { font-size: 2.2rem; }
+.mood-grid .option-check { display: none; }
+@media (max-width: 400px) {
+  .mood-grid { grid-template-columns: repeat(2, 1fr); }
+  .mood-grid .option:last-child { grid-column: 1 / -1; }
+}
+
+.option-list { display: grid; gap: .55rem; }
+@media (min-width: 600px) { .option-list.two-col { grid-template-columns: 1fr 1fr; } }
+.option-list.inline { grid-template-columns: repeat(3, 1fr); }
+.option-list.inline .option-body { justify-content: center; text-align: center; font-weight: 600; }
+.option-list.inline .option-check { display: none; }
+
+.chip-list { display: flex; flex-wrap: wrap; gap: .5rem; }
+.chip-list .option-body { border-radius: 999px; min-height: 46px; padding: .55rem 1rem; font-size: .97rem; gap: .45rem; }
+.chip-list .option-check { margin-left: 0; width: 20px; height: 20px; border-radius: 6px; font-size: .75rem; }
+
+/* Speichern */
+.save-card { text-align: center; }
+.save-for { color: var(--text-muted); margin-bottom: .9rem; }
+.dirty-indicator { font-size: .9rem; color: var(--text-muted); margin: .9rem 0 0; }
+.dirty-indicator.dirty { color: var(--rose-strong); }
+.form-errors { text-align: left; margin-top: 1rem; }
+.form-errors:empty { display: none; }
+.form-errors ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+.form-errors a { color: inherit; }
+.edit-banner { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+
+.saved-card { text-align: center; padding: 2.5rem 1.5rem; animation: reveal .5s ease; }
+.saved-icon {
+  width: 72px; height: 72px; margin: 0 auto 1rem; border-radius: 50%;
+  display: grid; place-items: center; background: var(--sage-soft); color: var(--sage-strong); font-size: 1.9rem;
+}
+.saved-card h2 { font-size: 1.45rem; max-width: 26ch; margin: 0 auto .75rem; }
+.saved-card h2:focus { outline: none; }
+.saved-card .btn-row { justify-content: center; margin-top: 1.4rem; }
+
+/* ============================================================
+   Einträge & Filter
+   ============================================================ */
+.filter-bar { display: grid; gap: .9rem; }
+.segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: var(--bg-soft); border: 1px solid var(--line); }
+.segmented button {
+  min-height: 44px; border: 0; border-radius: 999px; background: transparent; cursor: pointer;
+  font-weight: 600; color: var(--text-muted); font-size: .95rem;
+}
+.segmented button[aria-pressed="true"] { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+.filter-fields { display: grid; gap: .75rem; grid-template-columns: 1fr; }
+@media (min-width: 560px) { .filter-fields { grid-template-columns: 1fr 1fr; } }
+.filter-fields label { display: block; font-weight: 600; font-size: .9rem; margin-bottom: .3rem; }
+.custom-range { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.custom-range .input[type="date"] { max-width: none; }
+
+.entry-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .7rem; }
+.entry-item { padding: 0; overflow: hidden; margin: 0; }
+.entry-summary {
+  width: 100%; display: flex; align-items: center; gap: .9rem; text-align: left;
+  padding: 1rem 1.15rem; background: none; border: 0; cursor: pointer; min-height: 72px;
+  border-radius: var(--radius);
+}
+.entry-summary:hover { background: var(--bg-soft); }
+.entry-emoji { font-size: 2rem; line-height: 1; flex: none; }
+.entry-main { flex: 1; min-width: 0; }
+.entry-date { font-weight: 700; display: block; }
+.entry-meta { color: var(--text-muted); font-size: .92rem; display: block; }
+.entry-person {
+  display: inline-block; font-size: .78rem; font-weight: 700; padding: .12rem .55rem; border-radius: 999px;
+  background: var(--sage-soft); color: var(--sage-strong); margin-left: .35rem; vertical-align: 2px;
+  max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.entry-person.b { background: var(--rose-soft); color: var(--rose-strong); }
+.entry-chevron { flex: none; transition: transform .25s; color: var(--text-muted); }
+.entry-summary[aria-expanded="true"] .entry-chevron { transform: rotate(180deg); }
+.entry-detail { padding: 0 1.15rem 1.15rem; border-top: 1px solid var(--line); animation: reveal .3s ease; }
+.detail-list { margin: 1rem 0; display: grid; gap: .7rem; }
+.detail-list dt { font-size: .82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.detail-list dd { margin: .1rem 0 0; white-space: pre-wrap; word-break: break-word; }
+.empty-state { text-align: center; color: var(--text-muted); padding: 2rem 1rem; }
+.empty-state .big { font-size: 2.2rem; display: block; margin-bottom: .5rem; }
+.result-count { color: var(--text-muted); font-size: .92rem; margin: 0 0 .7rem; }
+
+/* ============================================================
+   Auswertung
+   ============================================================ */
+.stat-block h3 { font-size: 1.15rem; margin-bottom: .9rem; }
+.bar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem .75rem; align-items: center; }
+.bar-label { font-size: .97rem; }
+.bar-value { font-size: .88rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.bar-track { grid-column: 1 / -1; height: 10px; border-radius: 999px; background: var(--bg-soft); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; background: var(--sage); transition: width .5s ease; }
+.observation-list { margin: .5rem 0 0; padding-left: 1.2rem; display: grid; gap: .55rem; }
+.stat-total { font-family: var(--font-display); font-size: 1.25rem; margin: 0; }
+
+/* ============================================================
+   Einstellungen
+   ============================================================ */
+.settings-card h2 { font-size: 1.25rem; margin-bottom: .75rem; }
+.privacy-highlight {
+  font-family: var(--font-display); font-size: 1.2rem; font-weight: 600;
+  padding: 1rem 1.1rem; border-radius: var(--radius-sm); background: var(--sage-soft); margin-bottom: 1rem;
+}
+.privacy-list { padding-left: 1.2rem; margin: 0; display: grid; gap: .45rem; }
+.name-grid { display: grid; gap: .25rem 1rem; }
+@media (min-width: 560px) { .name-grid { grid-template-columns: 1fr 1fr; } }
+.data-actions { display: grid; gap: .6rem; }
+@media (min-width: 560px) { .data-actions { grid-template-columns: 1fr 1fr; } }
+.file-label { position: relative; }
+.file-label input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.file-label:focus-within { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+/* ============================================================
+   Dialog & Toast
+   ============================================================ */
+dialog.app-dialog {
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 1.5rem; max-width: min(460px, calc(100vw - 32px));
+  width: 100%; background: var(--card); color: var(--text); box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+dialog.app-dialog::backdrop { background: rgba(40, 33, 28, .45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+dialog.app-dialog[open] { animation: reveal .25s ease; }
+.dialog-title { font-size: 1.3rem; margin-bottom: .75rem; }
+.dialog-body p { color: var(--text-muted); }
+.dialog-actions { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: flex-end; margin-top: 1.25rem; }
+@media (max-width: 420px) { .dialog-actions { flex-direction: column-reverse; } .dialog-actions .btn { width: 100%; } }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom)); transform: translate(-50%, 1rem);
+  max-width: min(420px, calc(100vw - 32px)); width: max-content;
+  background: var(--text); color: var(--bg); padding: .85rem 1.2rem; border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 200;
+  font-size: .97rem;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85rem; padding: 0 0 2.5rem; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes reveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+<header class="app-header container">
+  <h1 class="app-title">Our Mood</h1>
+  <p class="app-subtitle">Ein Moment für uns – ohne Druck, ohne Erwartungen.</p>
+</header>
+
+<nav class="main-nav" aria-label="Hauptnavigation">
+  <div class="container">
+    <ul class="nav-list">
+      <li><button type="button" class="nav-btn" data-view="form" aria-current="page">Eintrag</button></li>
+      <li><button type="button" class="nav-btn" data-view="history">Einträge</button></li>
+      <li><button type="button" class="nav-btn" data-view="stats">Auswertung</button></li>
+      <li><button type="button" class="nav-btn" data-view="settings">Einstellungen</button></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main" class="container">
+
+  <div id="storage-warning" class="notice notice-warm" role="alert" hidden></div>
+
+  <!-- ======================= FORMULAR ======================= -->
+  <section id="view-form" class="view" aria-labelledby="form-title">
+    <h2 id="form-title" class="visually-hidden" tabindex="-1">Neuer Eintrag</h2>
+
+    <!-- Schritt 0: Profil wählen -->
+    <div id="profile-picker" class="card profile-picker">
+      <h2>Wer füllt gerade aus?</h2>
+      <p class="muted">Wähle dein eigenes Profil. Eure Antworten werden getrennt gespeichert.</p>
+      <div class="profile-buttons">
+        <button type="button" class="profile-btn" data-profile="A">
+          <span class="avatar" aria-hidden="true" data-avatar="A">A</span>
+          <span class="profile-name" data-name="A">Person A</span>
+        </button>
+        <button type="button" class="profile-btn" data-profile="B">
+          <span class="avatar b" aria-hidden="true" data-avatar="B">B</span>
+          <span class="profile-name" data-name="B">Person B</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Formularbereich (erst nach Profilwahl sichtbar) -->
+    <div id="form-area" hidden>
+      <div class="card profile-bar">
+        <div class="who">
+          <span class="avatar" id="active-avatar" aria-hidden="true">A</span>
+          <div>
+            <span class="muted small">Du füllst aus als</span><br>
+            <strong id="active-name">Person A</strong>
+          </div>
+        </div>
+        <button type="button" class="btn btn-small" id="switch-profile-btn">Profil wechseln</button>
+      </div>
+
+      <div id="edit-banner" class="notice notice-warm edit-banner" hidden>
+        <span id="edit-banner-text">Du bearbeitest einen gespeicherten Eintrag.</span>
+        <button type="button" class="btn btn-small" id="cancel-edit-btn">Bearbeitung abbrechen</button>
+      </div>
+
+      <form id="mood-form" novalidate>
+        <div class="card date-card">
+          <label for="entry-date">Datum des Eintrags</label>
+          <p class="date-display" id="date-display" aria-hidden="true"></p>
+          <input type="date" id="entry-date" class="input" required aria-describedby="date-error">
+          <p class="field-error" id="date-error" hidden></p>
+        </div>
+
+        <div class="card progress" aria-label="Fortschritt im Formular">
+          <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress-fill"></div></div>
+          <p class="progress-text" id="progress-text">0 von 4 Abschnitten ausgefüllt</p>
+          <ol class="steps">
+            <li><a class="step-link" href="#section-a" data-step="a"><span class="step-dot">A</span><span class="step-label">Stimmung</span><span class="visually-hidden step-state"></span></a></li>
+            <li><a class="step-link" href="#section-b" data-step="b"><span class="step-dot">B</span><span class="step-label">Einflüsse</span><span class="visually-hidden step-state"></span></a></li>
+            <li><a class="step-link" href="#section-c" data-step="c"><span class="step-dot">C</span><span class="step-label">Intimität</span><span class="visually-hidden step-state"></span></a></li>
+            <li><a class="step-link" href="#section-d" data-step="d"><span class="step-dot">D</span><span class="step-label">Reflexion</span><span class="visually-hidden step-state"></span></a></li>
+            <li><a class="step-link" href="#section-e" data-step="e"><span class="step-dot">E</span><span class="step-label">Speichern</span><span class="visually-hidden step-state"></span></a></li>
+          </ol>
+        </div>
+
+        <!-- Abschnitt A -->
+        <section class="card form-section" id="section-a" aria-labelledby="section-a-title">
+          <div class="section-head">
+            <span class="section-tag" aria-hidden="true">A</span>
+            <h2 id="section-a-title">Wie geht es mir heute?</h2>
+            <span class="badge required">Pflicht</span>
+          </div>
+          <fieldset class="question-group" aria-describedby="mood-error">
+            <legend class="question">Wie fühle ich mich heute?</legend>
+            <div class="mood-grid" id="mood-options"></div>
+          </fieldset>
+          <p class="field-error" id="mood-error" hidden></p>
+        </section>
+
+        <!-- Abschnitt B -->
+        <section class="card form-section" id="section-b" aria-labelledby="section-b-title">
+          <div class="section-head">
+            <span class="section-tag" aria-hidden="true">B</span>
+            <h2 id="section-b-title">Was beeinflusst meine Stimmung?</h2>
+            <span class="badge">optional</span>
+          </div>
+          <fieldset class="question-group">
+            <legend class="question">Was beschäftigt mich heute?</legend>
+            <p class="question-hint">Mehrfachauswahl möglich.</p>
+            <div class="chip-list" id="factor-options"></div>
+          </fieldset>
+          <label class="field-label" for="factors-note">Möchtest du noch etwas ergänzen? <span class="field-hint">(optional)</span></label>
+          <textarea id="factors-note" class="textarea" maxlength="2000" rows="3"></textarea>
+        </section>
+
+        <!-- Abschnitt C -->
+        <section class="card form-section" id="section-c" aria-labelledby="section-c-title">
+          <div class="section-head">
+            <span class="section-tag" aria-hidden="true">C</span>
+            <h2 id="section-c-title">Wie war es mit Intimität heute?</h2>
+            <span class="badge required">Pflicht</span>
+          </div>
+          <fieldset class="question-group" aria-describedby="intimacy-hint intimacy-error">
+            <legend class="question">Was war heute für uns passend?</legend>
+            <p class="question-hint" id="intimacy-hint">Jede Antwort ist in Ordnung – es gibt hier kein Richtig oder Falsch.</p>
+            <div class="option-list" id="intimacy-options"></div>
+          </fieldset>
+          <p class="field-error" id="intimacy-error" hidden></p>
+
+          <div class="subquestion" id="sex-experience-group" hidden>
+            <fieldset class="question-group">
+              <legend class="question">Wie habe ich den Sex erlebt? <span class="field-hint">(optional)</span></legend>
+              <div class="option-list two-col" id="sex-experience-options"></div>
+            </fieldset>
+          </div>
+
+          <div class="subquestion" id="after-feeling-group" hidden>
+            <fieldset class="question-group">
+              <legend class="question">Wie habe ich mich danach gefühlt? <span class="field-hint">(optional)</span></legend>
+              <div class="option-list two-col" id="after-feeling-options"></div>
+            </fieldset>
+          </div>
+        </section>
+
+        <!-- Abschnitt D -->
+        <section class="card form-section" id="section-d" aria-labelledby="section-d-title">
+          <div class="section-head">
+            <span class="section-tag" aria-hidden="true">D</span>
+            <h2 id="section-d-title">Freiwillige Reflexion</h2>
+            <span class="badge">optional</span>
+          </div>
+          <fieldset class="question-group" aria-describedby="pressure-hint">
+            <legend class="question">Habe ich mich heute unter Druck gefühlt?</legend>
+            <p class="question-hint" id="pressure-hint">Nur für deine eigene Wahrnehmung – es geht nicht um Schuld.</p>
+            <div class="option-list inline" id="pressure-options"></div>
+          </fieldset>
+          <label class="field-label" for="wish-note">Was hätte mir heute gutgetan? <span class="field-hint">(optional)</span></label>
+          <textarea id="wish-note" class="textarea" maxlength="2000" rows="3"></textarea>
+        </section>
+
+        <!-- Abschnitt E -->
+        <section class="card form-section save-card" id="section-e" aria-labelledby="section-e-title">
+          <h2 id="section-e-title" class="visually-hidden">Speichern</h2>
+          <p class="save-for">Wird gespeichert für: <strong id="save-for-name">Person A</strong></p>
+          <button type="submit" class="btn btn-primary btn-block" id="save-btn">Eintrag speichern</button>
+          <p class="dirty-indicator" id="dirty-indicator" aria-live="polite"></p>
+          <div class="form-errors notice notice-warm" id="form-errors" role="alert" tabindex="-1"></div>
+          <div class="btn-row" style="justify-content:center;margin-top:.6rem">
+            <button type="button" class="btn-link" id="reset-btn">Formular leeren</button>
+          </div>
+        </section>
+      </form>
+    </div>
+
+    <!-- Bestätigung nach dem Speichern -->
+    <div id="saved-card" class="card saved-card" hidden>
+      <div class="saved-icon" aria-hidden="true">✓</div>
+      <h2 id="saved-title" tabindex="-1">Danke, dass du dir Zeit für dich und eure Nähe genommen hast.</h2>
+      <p class="muted" id="saved-detail"></p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="saved-done-btn">Fertig – Profil abmelden</button>
+        <button type="button" class="btn" id="saved-history-btn">Meine Einträge ansehen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= EINTRÄGE ======================= -->
+  <section id="view-history" class="view" aria-labelledby="history-title" hidden>
+    <h2 id="history-title" class="view-title" tabindex="-1">Unsere bisherigen Einträge</h2>
+    <p class="view-intro">Eine schlichte Liste – ohne Kalender, ohne Vergleich.</p>
+    <div class="card" id="history-filters"></div>
+    <div id="history-content"></div>
+  </section>
+
+  <!-- ======================= AUSWERTUNG ======================= -->
+  <section id="view-stats" class="view" aria-labelledby="stats-title" hidden>
+    <h2 id="stats-title" class="view-title" tabindex="-1">Auswertung</h2>
+    <p class="view-intro">Ein ruhiger Blick auf das, was eingetragen wurde. Keine Ziele, keine Bewertung – die Zahlen beschreiben nur, was ausgewählt wurde.</p>
+    <div class="card" id="stats-filters"></div>
+    <div id="stats-content"></div>
+  </section>
+
+  <!-- ======================= EINSTELLUNGEN ======================= -->
+  <section id="view-settings" class="view" aria-labelledby="settings-title" hidden>
+    <h2 id="settings-title" class="view-title" tabindex="-1">Einstellungen</h2>
+
+    <div class="card settings-card">
+      <h2>Datenschutz</h2>
+      <p class="privacy-highlight">Deine Einträge werden auf diesem Gerät gespeichert.</p>
+      <ul class="privacy-list">
+        <li>Alle Angaben bleiben ausschließlich in diesem Browser auf diesem Gerät. Es werden keine Daten an Server gesendet – kein Konto, keine Analyse, kein Tracking, keine Werbung.</li>
+        <li><strong>Wenn Browserdaten gelöscht werden</strong> (z.&nbsp;B. „Verlauf/Websitedaten löschen“, privater Modus, Speicherbereinigung des Systems), <strong>können die Einträge unwiederbringlich verloren gehen.</strong> Erstelle deshalb regelmäßig eine Sicherung.</li>
+        <li>Andere Geräte oder andere Browser sehen diese Daten nicht. Zum Übertragen nutze Export und Import.</li>
+        <li>GitHub Pages stellt nur die App bereit und schützt keine privaten Daten. Jede Person mit Zugriff auf dieses entsperrte Gerät und diesen Browser könnte die gespeicherten Einträge sehen.</li>
+        <li>„Mein Bereich“ und die gemeinsame Ansicht sind eine Rücksichtsfunktion, keine echte Zugriffskontrolle.</li>
+        <li>Die Sicherungsdatei (JSON) ist nicht verschlüsselt. Bewahre sie an einem sicheren Ort auf.</li>
+      </ul>
+      <p class="muted small" style="margin-top:1rem" id="storage-summary"></p>
+    </div>
+
+    <div class="card settings-card">
+      <h2>Namen der Profile</h2>
+      <form id="names-form" novalidate>
+        <div class="name-grid">
+          <div>
+            <label class="field-label" for="name-a">Profil A</label>
+            <input id="name-a" class="input" type="text" maxlength="30" autocomplete="off" required>
+          </div>
+          <div>
+            <label class="field-label" for="name-b">Profil B</label>
+            <input id="name-b" class="input" type="text" maxlength="30" autocomplete="off" required>
+          </div>
+        </div>
+        <p class="field-error" id="names-error" role="alert" hidden></p>
+        <div class="btn-row" style="margin-top:1rem">
+          <button type="submit" class="btn btn-primary">Namen speichern</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card settings-card">
+      <h2>Sichern &amp; Wiederherstellen</h2>
+      <p class="muted">Exportiere alle Einträge als JSON-Datei, um sie zu sichern oder auf ein anderes Gerät zu übertragen.</p>
+      <div class="data-actions">
+        <button type="button" class="btn" id="export-btn">Alle Einträge exportieren</button>
+        <label class="btn file-label" for="import-input">
+          Backup importieren
+          <input type="file" id="import-input" accept="application/json,.json">
+        </label>
+      </div>
+    </div>
+
+    <div class="card settings-card">
+      <h2>Alle Daten löschen</h2>
+      <p class="muted">Entfernt alle Einträge und Namen aus diesem Browser. Das kann nicht rückgängig gemacht werden.</p>
+      <button type="button" class="btn btn-danger" id="delete-all-btn">Alle Daten löschen …</button>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer container">
+  <p>Our Mood · läuft komplett lokal in deinem Browser</p>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog class="app-dialog" id="app-dialog" aria-labelledby="dialog-title">
+  <h2 class="dialog-title" id="dialog-title"></h2>
+  <div class="dialog-body" id="dialog-body"></div>
+  <div id="dialog-input-wrap" hidden>
+    <label class="field-label" for="dialog-input" id="dialog-input-label"></label>
+    <input type="text" class="input" id="dialog-input" autocomplete="off">
+  </div>
+  <div class="dialog-actions" id="dialog-actions"></div>
+</dialog>
+
+<script>
+'use strict';
+(function () {
+
+  /* ==========================================================
+     1. Feste Antwortoptionen
+     Die "value"-Werte werden gespeichert; die "label"-Texte nur angezeigt.
+     ========================================================== */
+  const MOODS = [
+    { value: 'sehr_gut', label: 'Sehr gut', emoji: '😍' },
+    { value: 'gut', label: 'Gut', emoji: '🙂' },
+    { value: 'neutral', label: 'Neutral', emoji: '😐' },
+    { value: 'nicht_so_gut', label: 'Nicht so gut', emoji: '😔' },
+    { value: 'gestresst', label: 'Gestresst', emoji: '😫' }
+  ];
+  const FACTORS = [
+    { value: 'entspannt', label: 'Entspannt' },
+    { value: 'muede', label: 'Müde' },
+    { value: 'stress', label: 'Stress / viel im Kopf' },
+    { value: 'koerperlich_unwohl', label: 'Körperlich unwohl' },
+    { value: 'naehebeduerfnis', label: 'Nähebedürfnis' },
+    { value: 'lust_sex', label: 'Lust auf Sex' },
+    { value: 'lust_kuscheln', label: 'Lust auf Kuscheln' },
+    { value: 'keine_beruehrung', label: 'Keine Lust auf Berührung' },
+    { value: 'streit', label: 'Streit / Anspannung' },
+    { value: 'privatsphaere', label: 'Privatsphäre fehlt' }
+  ];
+  // Bewusst gleichwertig dargestellt – "Kein Sex" ist kein negatives Ergebnis.
+  const INTIMACY = [
+    { value: 'kein_sex', label: 'Kein Sex', emoji: '🌿' },
+    { value: 'naehe', label: 'Nur Kuscheln / Küssen / Nähe', emoji: '🫶' },
+    { value: 'sex', label: 'Sex hat stattgefunden', emoji: '✨' }
+  ];
+  const SEX_EXPERIENCE = [
+    { value: 'sehr_schoen', label: 'Sehr schön' },
+    { value: 'schoen', label: 'Schön' },
+    { value: 'okay', label: 'Okay' },
+    { value: 'eher_nicht', label: 'Eher nicht so schön' },
+    { value: 'unangenehm', label: 'Unangenehm' }
+  ];
+  const AFTER_FEELING = [
+    { value: 'verbunden', label: 'Verbunden und nah' },
+    { value: 'entspannt', label: 'Entspannt und zufrieden' },
+    { value: 'neutral', label: 'Neutral' },
+    { value: 'distanziert', label: 'Eher distanziert' },
+    { value: 'unsicher', label: 'Unsicher / gemischte Gefühle' }
+  ];
+  const PRESSURE = [
+    { value: 'nein', label: 'Nein' },
+    { value: 'ein_bisschen', label: 'Ein bisschen' },
+    { value: 'ja', label: 'Ja' }
+  ];
+
+  const PROFILES = ['A', 'B'];
+  const DEFAULT_NAMES = { A: 'Person A', B: 'Person B' };
+  const STORAGE_KEY = 'ourMood.data.v1';
+  const DATA_VERSION = 1;
+  const MAX_TEXT_LENGTH = 2000;
+  const MAX_NAME_LENGTH = 30;
+  const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+
+  /* ==========================================================
+     2. Kleine Hilfsfunktionen
+     ========================================================== */
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+  /**
+   * Erstellt ein DOM-Element. Texte werden IMMER über textContent gesetzt,
+   * sodass Nutzereingaben niemals als HTML interpretiert werden.
+   */
+  function el(tag, props = {}, children = []) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(props)) {
+      if (value === null || value === undefined || value === false) continue;
+      if (key === 'className') node.className = value;
+      else if (key === 'text') node.textContent = value;
+      else if (key === 'dataset') Object.assign(node.dataset, value);
+      else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2), value);
+      else if (value === true) node.setAttribute(key, '');
+      else node.setAttribute(key, String(value));
+    }
+    for (const child of [].concat(children)) {
+      if (child === null || child === undefined || child === false) continue;
+      node.append(child instanceof Node ? child : String(child));
+    }
+    return node;
+  }
+
+  const labelOf = (list, value) => (list.find(item => item.value === value) || {}).label || '';
+  const optionOf = (list, value) => list.find(item => item.value === value) || null;
+  const pad2 = n => String(n).padStart(2, '0');
+
+  /** Heutiges Datum in LOKALER Zeit als JJJJ-MM-TT (nicht UTC!). */
+  function todayIso() {
+    const now = new Date();
+    return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  }
+
+  /** Datum vor n Tagen (lokal) als JJJJ-MM-TT. */
+  function daysAgoIso(days) {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0); // Mittag vermeidet Probleme mit Sommer-/Winterzeit
+    d.setDate(d.getDate() - days);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  }
+
+  /** Prüft, ob ein String ein echtes Kalenderdatum JJJJ-MM-TT ist (z. B. kein 31.02.). */
+  function isValidIsoDate(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [y, m, d] = value.split('-').map(Number);
+    if (y < 1900 || y > 9999) return false;
+    const date = new Date(y, m - 1, d);
+    return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+  }
+
+  /** Lokale Date-Instanz aus JJJJ-MM-TT (ohne Zeitzonenverschiebung). */
+  function parseIsoDate(value) {
+    const [y, m, d] = value.split('-').map(Number);
+    return new Date(y, m - 1, d, 12);
+  }
+
+  function formatDateLong(iso) {
+    if (!isValidIsoDate(iso)) return '';
+    return parseIsoDate(iso).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function formatDateShort(iso) {
+    if (!isValidIsoDate(iso)) return '';
+    return parseIsoDate(iso).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  function formatTimestamp(isoString) {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('de-DE', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function createId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function cleanText(value, maxLength = MAX_TEXT_LENGTH) {
+    return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+  }
+
+  /* ==========================================================
+     3. Datenhaltung (localStorage) und Validierung
+     ========================================================== */
+  function defaultData() {
+    return { version: DATA_VERSION, settings: { names: { ...DEFAULT_NAMES } }, entries: [] };
+  }
+
+  /**
+   * Wandelt einen beliebigen (evtl. fehlerhaften) Wert in einen sauberen Eintrag um.
+   * Gibt null zurück, wenn Pflichtangaben fehlen oder ungültig sind.
+   * Es werden nur bekannte Felder übernommen – alles andere wird verworfen.
+   */
+  function normalizeEntry(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+    if (!PROFILES.includes(raw.profile)) return null;
+    if (!isValidIsoDate(raw.date)) return null;
+    if (!optionOf(MOODS, raw.mood)) return null;
+    if (!optionOf(INTIMACY, raw.intimacy)) return null;
+
+    const factors = Array.isArray(raw.factors)
+      ? FACTORS.map(f => f.value).filter(v => raw.factors.includes(v))
+      : [];
+    const sexExperience = raw.intimacy === 'sex' && optionOf(SEX_EXPERIENCE, raw.sexExperience) ? raw.sexExperience : '';
+    const afterFeeling = raw.intimacy !== 'kein_sex' && optionOf(AFTER_FEELING, raw.afterFeeling) ? raw.afterFeeling : '';
+    const pressure = optionOf(PRESSURE, raw.pressure) ? raw.pressure : '';
+    const nowIso = new Date().toISOString();
+    const validTime = v => typeof v === 'string' && v.length < 40 && !isNaN(new Date(v).getTime());
+
+    return {
+      id: typeof raw.id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(raw.id) ? raw.id : createId(),
+      profile: raw.profile,
+      date: raw.date,
+      mood: raw.mood,
+      factors,
+      factorsNote: cleanText(raw.factorsNote),
+      intimacy: raw.intimacy,
+      sexExperience,
+      afterFeeling,
+      pressure,
+      wish: cleanText(raw.wish),
+      createdAt: validTime(raw.createdAt) ? raw.createdAt : nowIso,
+      updatedAt: validTime(raw.updatedAt) ? raw.updatedAt : (validTime(raw.createdAt) ? raw.createdAt : nowIso)
+    };
+  }
+
+  function normalizeNames(rawNames) {
+    const names = { ...DEFAULT_NAMES };
+    if (rawNames && typeof rawNames === 'object') {
+      for (const p of PROFILES) {
+        const n = cleanText(rawNames[p], MAX_NAME_LENGTH);
+        if (n) names[p] = n;
+      }
+    }
+    return names;
+  }
+
+  /**
+   * Prüft ein komplettes Datenobjekt (aus localStorage oder Import).
+   * Liefert { ok, data, validCount, invalidCount } – wirft niemals.
+   */
+  function normalizeData(raw) {
+    let entriesRaw = null;
+    let namesRaw = null;
+    if (Array.isArray(raw)) {
+      entriesRaw = raw;
+    } else if (raw && typeof raw === 'object' && Array.isArray(raw.entries)) {
+      entriesRaw = raw.entries;
+      namesRaw = raw.settings && raw.settings.names;
+    }
+    if (!entriesRaw) return { ok: false, data: null, validCount: 0, invalidCount: 0 };
+
+    const seenIds = new Set();
+    const entries = [];
+    let invalidCount = 0;
+    for (const item of entriesRaw) {
+      const entry = normalizeEntry(item);
+      if (!entry) { invalidCount++; continue; }
+      if (seenIds.has(entry.id)) entry.id = createId(); // doppelte IDs entschärfen
+      seenIds.add(entry.id);
+      entries.push(entry);
+    }
+    return {
+      ok: true,
+      data: { version: DATA_VERSION, settings: { names: normalizeNames(namesRaw) }, entries },
+      validCount: entries.length,
+      invalidCount,
+      hasNames: !!namesRaw
+    };
+  }
+
+  let storageAvailable = true;
+
+  function loadData() {
+    let raw;
+    try {
+      raw = window.localStorage.getItem(STORAGE_KEY);
+    } catch (err) {
+      storageAvailable = false;
+      return defaultData();
+    }
+    if (!raw) return defaultData();
+    try {
+      const result = normalizeData(JSON.parse(raw));
+      if (result.ok) return result.data;
+      throw new Error('Unbekanntes Format');
+    } catch (err) {
+      // Beschädigte Daten NICHT überschreiben, sondern unter anderem Schlüssel aufheben.
+      try { window.localStorage.setItem(STORAGE_KEY + '.beschaedigt.' + Date.now(), raw); } catch (e) { /* ignorieren */ }
+      showStorageWarning('Die gespeicherten Daten konnten nicht gelesen werden. Eine Kopie der ursprünglichen Daten wurde im Browser aufbewahrt; die App startet leer.');
+      return defaultData();
+    }
+  }
+
+  /** Schreibt alle Daten. Gibt false zurück, wenn das Speichern fehlschlägt. */
+  function persist() {
+    if (!storageAvailable) return false;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function showStorageWarning(text) {
+    const box = $('#storage-warning');
+    box.textContent = text;
+    box.hidden = false;
+  }
+
+  /* ==========================================================
+     4. Zustand der App
+     ========================================================== */
+  let appData = loadData();
+  let activeProfile = null;   // wird bewusst NICHT gespeichert – nach jedem Laden neu wählen
+  let editingId = null;       // ID des Eintrags, der gerade bearbeitet wird
+  let formSnapshot = '';      // Formularzustand beim letzten Laden/Speichern (für "ungespeichert")
+  let isSaving = false;       // Schutz vor Doppelklick
+  let justSaved = false;      // Bestätigungskarte anzeigen
+  let currentView = 'form';
+  let sharedViewOpen = false; // gemeinsame Ansicht nur nach ausdrücklicher Bestätigung
+  let expandedEntryId = null;
+  const filters = { person: 'all', period: 'all', from: '', to: '' };
+
+  const nameOf = profile => appData.settings.names[profile] || DEFAULT_NAMES[profile];
+
+  /* ==========================================================
+     5. Dialog & Toast
+     ========================================================== */
+  const dialogEl = $('#app-dialog');
+
+  /**
+   * Zeigt einen barrierearmen modalen Dialog.
+   * buttons: [{ label, value, variant: 'primary'|'danger'|'default', autofocus }]
+   * Rückgabe (Promise): { action, input } – action ist null bei Abbruch (Esc).
+   */
+  function openDialog({ title, message, buttons, input }) {
+    const paragraphs = [].concat(message || []);
+    if (typeof dialogEl.showModal !== 'function') {
+      // Fallback für sehr alte Browser
+      const text = title + '\n\n' + paragraphs.join('\n\n');
+      if (input) {
+        const val = window.prompt(text + '\n\n' + input.label);
+        return Promise.resolve({ action: val === null ? null : buttons[buttons.length - 1].value, input: val || '' });
+      }
+      const main = buttons.find(b => b.variant !== 'cancel' && b.value !== 'cancel');
+      const ok = buttons.length === 1 ? (window.alert(text), true) : window.confirm(text);
+      return Promise.resolve({ action: ok && main ? main.value : null, input: '' });
+    }
+
+    return new Promise(resolve => {
+      const previousFocus = document.activeElement;
+      let result = null;
+      $('#dialog-title').textContent = title;
+      $('#dialog-body').replaceChildren(...paragraphs.map(p => el('p', { text: p })));
+      const inputWrap = $('#dialog-input-wrap');
+      const inputField = $('#dialog-input');
+      inputWrap.hidden = !input;
+      inputField.value = '';
+      if (input) $('#dialog-input-label').textContent = input.label;
+
+      let focusTarget = null;
+      const actions = buttons.map(b => {
+        const btn = el('button', {
+          type: 'button',
+          className: 'btn' + (b.variant === 'primary' ? ' btn-primary' : b.variant === 'danger' ? ' btn-danger' : ''),
+          text: b.label,
+          onclick: () => { result = b.value; dialogEl.close(); }
+        });
+        if (b.autofocus) focusTarget = btn;
+        return btn;
+      });
+      $('#dialog-actions').replaceChildren(...actions);
+
+      const onKey = e => {
+        if (input && e.key === 'Enter') {
+          e.preventDefault();
+          const confirmBtn = buttons.find(b => b.value !== 'cancel');
+          if (confirmBtn) { result = confirmBtn.value; dialogEl.close(); }
+        }
+      };
+      inputField.addEventListener('keydown', onKey);
+      dialogEl.addEventListener('close', function onClose() {
+        dialogEl.removeEventListener('close', onClose);
+        inputField.removeEventListener('keydown', onKey);
+        const inputValue = inputField.value;
+        if (previousFocus && typeof previousFocus.focus === 'function' && document.contains(previousFocus)) previousFocus.focus();
+        resolve({ action: result === 'cancel' ? null : result, input: inputValue });
+      });
+      dialogEl.showModal();
+      if (input) inputField.focus();
+      else (focusTarget || actions[0]).focus();
+    });
+  }
+
+  async function confirmAction(title, message, confirmLabel, { danger = false, cancelLabel = 'Abbrechen' } = {}) {
+    const res = await openDialog({
+      title, message,
+      buttons: [
+        { label: cancelLabel, value: 'cancel', autofocus: danger },
+        { label: confirmLabel, value: 'confirm', variant: danger ? 'danger' : 'primary', autofocus: !danger }
+      ]
+    });
+    return res.action === 'confirm';
+  }
+
+  function showInfo(title, message) {
+    return openDialog({ title, message, buttons: [{ label: 'Verstanden', value: 'ok', variant: 'primary', autofocus: true }] });
+  }
+
+  let toastTimer = null;
+  function toast(text) {
+    const t = $('#toast');
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  }
+
+  /* ==========================================================
+     6. Formular aufbauen
+     ========================================================== */
+  const form = $('#mood-form');
+  const dateInput = $('#entry-date');
+  const factorsNoteInput = $('#factors-note');
+  const wishInput = $('#wish-note');
+
+  /** Baut Radio-/Checkbox-Optionen. Native Inputs = Tastatur & Screenreader funktionieren automatisch. */
+  function buildOptions(container, name, options, type = 'radio') {
+    const nodes = options.map(opt => {
+      const id = `${name}-${opt.value}`;
+      return el('label', { className: 'option', for: id }, [
+        el('input', { type, name, value: opt.value, id }),
+        el('span', { className: 'option-body' }, [
+          opt.emoji ? el('span', { className: 'option-emoji', 'aria-hidden': 'true', text: opt.emoji }) : null,
+          el('span', { className: 'option-label', text: opt.label }),
+          el('span', { className: 'option-check', 'aria-hidden': 'true', text: '✓' })
+        ])
+      ]);
+    });
+    container.replaceChildren(...nodes);
+  }
+
+  buildOptions($('#mood-options'), 'mood', MOODS);
+  buildOptions($('#factor-options'), 'factors', FACTORS, 'checkbox');
+  buildOptions($('#intimacy-options'), 'intimacy', INTIMACY);
+  buildOptions($('#sex-experience-options'), 'sexExperience', SEX_EXPERIENCE);
+  buildOptions($('#after-feeling-options'), 'afterFeeling', AFTER_FEELING);
+  buildOptions($('#pressure-options'), 'pressure', PRESSURE);
+
+  const checkedValue = name => {
+    const input = form.querySelector(`input[name="${name}"]:checked`);
+    return input ? input.value : '';
+  };
+
+  /** Liest den aktuellen Formularinhalt als einfaches Objekt. */
+  function getFormValues() {
+    const intimacy = checkedValue('intimacy');
+    return {
+      date: dateInput.value,
+      mood: checkedValue('mood'),
+      factors: $$('input[name="factors"]:checked', form).map(i => i.value),
+      factorsNote: cleanText(factorsNoteInput.value),
+      intimacy,
+      sexExperience: intimacy === 'sex' ? checkedValue('sexExperience') : '',
+      afterFeeling: (intimacy === 'naehe' || intimacy === 'sex') ? checkedValue('afterFeeling') : '',
+      pressure: checkedValue('pressure'),
+      wish: cleanText(wishInput.value)
+    };
+  }
+
+  const contentKey = values => JSON.stringify([
+    values.date, values.mood, values.factors.slice().sort(), values.factorsNote, values.intimacy,
+    values.sexExperience, values.afterFeeling, values.pressure, values.wish
+  ]);
+
+  function takeSnapshot() { formSnapshot = contentKey(getFormValues()); updateDirtyState(); }
+  const isFormDirty = () => activeProfile !== null && !justSaved && contentKey(getFormValues()) !== formSnapshot;
+
+  /** Zeigt die Zusatzfragen nur, wenn sie zur Intimitätsauswahl passen. */
+  function updateConditionalQuestions() {
+    const intimacy = checkedValue('intimacy');
+    const showSex = intimacy === 'sex';
+    const showAfter = intimacy === 'naehe' || intimacy === 'sex';
+    const sexGroup = $('#sex-experience-group');
+    const afterGroup = $('#after-feeling-group');
+    sexGroup.hidden = !showSex;
+    afterGroup.hidden = !showAfter;
+    // Nicht mehr passende Antworten zurücksetzen, damit nichts Verstecktes gespeichert wird.
+    if (!showSex) $$('input[name="sexExperience"]', form).forEach(i => { i.checked = false; });
+    if (!showAfter) $$('input[name="afterFeeling"]', form).forEach(i => { i.checked = false; });
+  }
+
+  function updateDateDisplay() {
+    dateInput.max = todayIso();
+    const text = formatDateLong(dateInput.value);
+    $('#date-display').textContent = text || 'Bitte wähle ein Datum';
+  }
+
+  function updateProgress() {
+    const v = getFormValues();
+    const done = {
+      a: !!v.mood,
+      b: v.factors.length > 0 || !!v.factorsNote,
+      c: !!v.intimacy,
+      d: !!v.pressure || !!v.wish
+    };
+    const count = ['a', 'b', 'c', 'd'].filter(k => done[k]).length;
+    $('#progress-fill').style.width = (count / 4 * 100) + '%';
+
+    const missing = [];
+    if (!done.a) missing.push('Stimmung');
+    if (!done.c) missing.push('Intimität');
+    $('#progress-text').textContent = `${count} von 4 Abschnitten ausgefüllt · ` +
+      (missing.length ? `Noch offen (Pflicht): ${missing.join(', ')}` : 'Bereit zum Speichern');
+
+    for (const link of $$('.step-link', form)) {
+      const step = link.dataset.step;
+      const isDone = step === 'e' ? false : done[step];
+      link.classList.toggle('done', !!isDone);
+      link.classList.toggle('required-open', (step === 'a' || step === 'c') && !isDone);
+      $('.step-state', link).textContent = isDone ? ' – ausgefüllt' : (step === 'a' || step === 'c') ? ' – Pflicht, noch offen' : ' – optional';
+    }
+  }
+
+  function updateDirtyState() {
+    const indicator = $('#dirty-indicator');
+    const dirty = isFormDirty();
+    indicator.classList.toggle('dirty', dirty);
+    indicator.textContent = dirty
+      ? 'Ungespeicherte Eingaben – sie gehen verloren, wenn du das Profil wechselst, das Formular leerst oder die Seite schließt.'
+      : (editingId ? 'Keine Änderungen am gespeicherten Eintrag.' : 'Noch keine Eingaben.');
+  }
+
+  function clearErrors() {
+    for (const id of ['date-error', 'mood-error', 'intimacy-error']) {
+      const node = $('#' + id);
+      node.hidden = true;
+      node.textContent = '';
+    }
+    dateInput.removeAttribute('aria-invalid');
+    $('#form-errors').replaceChildren();
+  }
+
+  /** Setzt das Formular komplett zurück (neuer, leerer Eintrag mit heutigem Datum). */
+  function resetForm() {
+    form.reset();
+    editingId = null;
+    dateInput.value = todayIso();
+    $('#edit-banner').hidden = true;
+    updateConditionalQuestions();
+    clearErrors();
+    updateDateDisplay();
+    updateProgress();
+    takeSnapshot();
+  }
+
+  /** Lädt einen gespeicherten Eintrag zum Bearbeiten ins Formular. */
+  function fillForm(entry) {
+    form.reset();
+    dateInput.value = entry.date;
+    const check = (name, value) => {
+      const input = form.querySelector(`input[name="${name}"][value="${value}"]`);
+      if (input) input.checked = true;
+    };
+    check('mood', entry.mood);
+    entry.factors.forEach(f => check('factors', f));
+    factorsNoteInput.value = entry.factorsNote;
+    check('intimacy', entry.intimacy);
+    updateConditionalQuestions();
+    if (entry.sexExperience) check('sexExperience', entry.sexExperience);
+    if (entry.afterFeeling) check('afterFeeling', entry.afterFeeling);
+    if (entry.pressure) check('pressure', entry.pressure);
+    wishInput.value = entry.wish;
+    clearErrors();
+    updateDateDisplay();
+    updateProgress();
+    takeSnapshot();
+  }
+
+  /** Prüft das Formular und liefert eine Liste verständlicher Fehlermeldungen. */
+  function validate(values) {
+    const errors = [];
+    if (!values.date) {
+      errors.push({ field: 'date', target: dateInput, text: 'Bitte wähle ein Datum für deinen Eintrag.' });
+    } else if (!isValidIsoDate(values.date)) {
+      errors.push({ field: 'date', target: dateInput, text: 'Das Datum ist ungültig. Bitte wähle ein Datum aus dem Kalender.' });
+    } else if (values.date > todayIso()) {
+      errors.push({ field: 'date', target: dateInput, text: 'Das Datum liegt in der Zukunft. Bitte wähle heute oder einen vergangenen Tag.' });
+    }
+    if (!values.mood) {
+      errors.push({ field: 'mood', target: $('input[name="mood"]', form), text: 'Bitte wähle aus, wie du dich heute fühlst (Abschnitt A).' });
+    }
+    if (!values.intimacy) {
+      errors.push({ field: 'intimacy', target: $('input[name="intimacy"]', form), text: 'Bitte wähle aus, was heute für euch passend war (Abschnitt C).' });
+    }
+    return errors;
+  }
+
+  function showErrors(errors) {
+    clearErrors();
+    if (!errors.length) return;
+    for (const err of errors) {
+      const node = $('#' + err.field + '-error');
+      node.textContent = err.text;
+      node.hidden = false;
+      if (err.field === 'date') dateInput.setAttribute('aria-invalid', 'true');
+    }
+    const box = $('#form-errors');
+    box.replaceChildren(
+      el('strong', { text: errors.length === 1 ? 'Eine Angabe fehlt noch:' : 'Ein paar Angaben fehlen noch:' }),
+      el('ul', {}, errors.map(err => el('li', {}, el('a', {
+        href: '#',
+        text: err.text,
+        onclick: e => { e.preventDefault(); err.target.focus(); }
+      }))))
+    );
+    errors[0].target.focus();
+  }
+
+  /* ==========================================================
+     7. Speichern
+     ========================================================== */
+  async function handleSubmit(event) {
+    event.preventDefault();
+    if (isSaving) return;            // Doppelklick-Schutz
+    if (!activeProfile) { renderFormView(); return; }
+
+    const values = getFormValues();
+    const errors = validate(values);
+    if (errors.length) { showErrors(errors); return; }
+    clearErrors();
+
+    isSaving = true;
+    const saveBtn = $('#save-btn');
+    saveBtn.disabled = true;
+    saveBtn.setAttribute('aria-busy', 'true');
+    try {
+      const profileAtSave = activeProfile; // fest gemerkt, damit sich nichts zwischendurch ändern kann
+      const nowIso = new Date().toISOString();
+
+      if (editingId) {
+        const index = appData.entries.findIndex(e => e.id === editingId);
+        if (index === -1) {
+          await showInfo('Eintrag nicht gefunden', 'Der Eintrag, den du bearbeitest, wurde inzwischen gelöscht. Deine Eingaben werden als neuer Eintrag behandelt – bitte speichere erneut.');
+          editingId = null;
+          $('#edit-banner').hidden = true;
+          return;
+        }
+        const original = appData.entries[index];
+        if (original.profile !== profileAtSave) {
+          await showInfo('Profil passt nicht', 'Dieser Eintrag gehört zu einem anderen Profil und wurde nicht verändert.');
+          return;
+        }
+        const updated = normalizeEntry({ ...original, ...values, updatedAt: nowIso });
+        appData.entries[index] = updated;
+        if (!persist()) {
+          appData.entries[index] = original;
+          await showInfo('Speichern nicht möglich', 'Der Eintrag konnte nicht im Browser gespeichert werden (z. B. privater Modus oder voller Speicher). Deine Eingaben sind noch im Formular.');
+          return;
+        }
+        finishSave('Deine Änderungen wurden gespeichert.');
+        return;
+      }
+
+      // Neuer Eintrag: doppelte Speicherung erkennen
+      const sameDay = appData.entries.filter(e => e.profile === profileAtSave && e.date === values.date);
+      if (sameDay.some(e => contentKey(e) === contentKey(values))) {
+        await showInfo('Bereits gespeichert', 'Genau dieser Eintrag ist für dieses Datum schon gespeichert. Er wurde nicht doppelt angelegt.');
+        return;
+      }
+      if (sameDay.length) {
+        const proceed = await confirmAction(
+          'Schon ein Eintrag an diesem Tag',
+          [`Für ${formatDateLong(values.date)} gibt es bereits ${sameDay.length === 1 ? 'einen Eintrag' : sameDay.length + ' Einträge'} von ${nameOf(profileAtSave)}.`,
+            'Möchtest du trotzdem einen weiteren Eintrag speichern? Einen bestehenden Eintrag kannst du auch unter „Einträge“ bearbeiten.'],
+          'Weiteren Eintrag speichern'
+        );
+        if (!proceed) return;
+        if (activeProfile !== profileAtSave) return; // Sicherheitsnetz
+      }
+
+      const entry = normalizeEntry({ ...values, id: createId(), profile: profileAtSave, createdAt: nowIso, updatedAt: nowIso });
+      appData.entries.push(entry);
+      if (!persist()) {
+        appData.entries.pop();
+        await showInfo('Speichern nicht möglich', 'Der Eintrag konnte nicht im Browser gespeichert werden (z. B. privater Modus oder voller Speicher). Deine Eingaben sind noch im Formular.');
+        return;
+      }
+      finishSave(`Gespeichert für ${nameOf(profileAtSave)} · ${formatDateLong(values.date)}`);
+    } finally {
+      isSaving = false;
+      saveBtn.disabled = false;
+      saveBtn.removeAttribute('aria-busy');
+    }
+  }
+
+  function finishSave(detailText) {
+    justSaved = true;
+    resetForm();
+    $('#saved-detail').textContent = detailText;
+    renderFormView();
+    $('#saved-title').focus();
+    window.scrollTo({ top: 0 });
+  }
+
+  /* ==========================================================
+     8. Profile
+     ========================================================== */
+  function renderNames() {
+    for (const p of PROFILES) {
+      $$(`[data-name="${p}"]`).forEach(node => { node.textContent = nameOf(p); });
+      $(`.profile-btn[data-profile="${p}"]`).setAttribute('aria-label', `Als ${nameOf(p)} ausfüllen`);
+    }
+    if (activeProfile) {
+      $('#active-name').textContent = nameOf(activeProfile);
+      $('#save-for-name').textContent = nameOf(activeProfile);
+      const avatar = $('#active-avatar');
+      avatar.textContent = activeProfile;
+      avatar.classList.toggle('b', activeProfile === 'B');
+    }
+  }
+
+  function selectProfile(profile) {
+    if (!PROFILES.includes(profile)) return;
+    activeProfile = profile;
+    sharedViewOpen = false;
+    justSaved = false;
+    expandedEntryId = null;
+    filters.person = 'all';
+    resetForm();
+    renderNames();
+    renderFormView();
+    toast(`Profil gewählt: ${nameOf(profile)}`);
+    $('#active-name').closest('.profile-bar').scrollIntoView({ block: 'start' });
+    $('#entry-date').focus({ preventScroll: true });
+  }
+
+  /** Profil abmelden. Fragt nach, wenn ungespeicherte Eingaben verloren gehen würden. */
+  async function leaveProfile() {
+    if (isFormDirty()) {
+      const ok = await confirmAction(
+        'Ungespeicherte Eingaben verwerfen?',
+        'Wenn du das Profil wechselst, gehen deine noch nicht gespeicherten Eingaben verloren.',
+        'Verwerfen und wechseln', { danger: true }
+      );
+      if (!ok) return false;
+    }
+    activeProfile = null;
+    sharedViewOpen = false;
+    justSaved = false;
+    expandedEntryId = null;
+    resetForm();
+    renderFormView();
+    return true;
+  }
+
+  /* ==========================================================
+     9. Ansichten / Navigation
+     ========================================================== */
+  function renderFormView() {
+    const hasProfile = !!activeProfile;
+    $('#profile-picker').hidden = hasProfile;
+    $('#saved-card').hidden = !(hasProfile && justSaved);
+    $('#form-area').hidden = !(hasProfile && !justSaved);
+    if (hasProfile) renderNames();
+    updateDirtyState();
+  }
+
+  function showView(view, { focus = true } = {}) {
+    currentView = view;
+    for (const name of ['form', 'history', 'stats', 'settings']) {
+      $('#view-' + name).hidden = name !== view;
+    }
+    $$('.nav-btn').forEach(btn => {
+      if (btn.dataset.view === view) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    });
+    if (view === 'form') renderFormView();
+    if (view === 'history') renderHistory();
+    if (view === 'stats') renderStats();
+    if (view === 'settings') renderSettings();
+    if (focus) {
+      const heading = $(`#view-${view} h2[tabindex="-1"]`);
+      if (heading) heading.focus({ preventScroll: true });
+      window.scrollTo({ top: 0 });
+    }
+  }
+
+  /* ==========================================================
+     10. Filter (gemeinsam für Einträge und Auswertung)
+     ========================================================== */
+  async function openSharedView() {
+    const ok = await confirmAction(
+      'Gemeinsame Ansicht öffnen?',
+      ['In der gemeinsamen Ansicht werden auch die Antworten der anderen Person angezeigt. Öffnet sie am besten nur, wenn ihr beide damit einverstanden seid.',
+        'Hinweis: Auf einem gemeinsam genutzten Gerät ist das keine echte Zugriffskontrolle – es ist eine Rücksichtsfunktion.'],
+      'Gemeinsame Ansicht öffnen'
+    );
+    if (!ok) return;
+    sharedViewOpen = true;
+    filters.person = 'all';
+    rerenderCurrent();
+  }
+
+  function closeSharedView() {
+    sharedViewOpen = false;
+    filters.person = 'all';
+    expandedEntryId = null;
+    rerenderCurrent();
+  }
+
+  function rerenderCurrent() {
+    if (currentView === 'history') renderHistory();
+    if (currentView === 'stats') renderStats();
+  }
+
+  /** Baut die Filterleiste (Bereich, Person, Zeitraum) für die angegebene Ansicht. */
+  function renderFilterBar(container, context) {
+    const prefix = context; // 'history' oder 'stats' – für eindeutige IDs
+    const scope = el('div', { className: 'segmented', role: 'group', 'aria-label': 'Ansicht wählen' }, [
+      el('button', {
+        type: 'button', 'aria-pressed': String(!sharedViewOpen), text: 'Mein Bereich',
+        onclick: () => { if (sharedViewOpen) closeSharedView(); }
+      }),
+      el('button', {
+        type: 'button', 'aria-pressed': String(sharedViewOpen), text: 'Gemeinsame Ansicht',
+        onclick: () => { if (!sharedViewOpen) openSharedView(); }
+      })
+    ]);
+
+    const parts = [scope];
+    if (sharedViewOpen) {
+      parts.push(el('div', { className: 'notice notice-warm', style: 'margin:0' }, [
+        el('strong', { text: 'Gemeinsame Ansicht ist geöffnet.' }),
+        el('p', { text: 'Hier sind die Einträge beider Profile sichtbar. Auf einem gemeinsam genutzten Gerät ist das keine echte Zugriffskontrolle.' })
+      ]));
+    } else if (activeProfile) {
+      parts.push(el('p', { className: 'muted small', style: 'margin:0', text: `Du siehst nur die Einträge von ${nameOf(activeProfile)}.` }));
+    }
+
+    const fields = [];
+    if (sharedViewOpen) {
+      const personSelect = el('select', { className: 'select', id: prefix + '-person' }, [
+        el('option', { value: 'all', text: context === 'stats' ? 'Beide zusammen' : 'Beide Profile' }),
+        el('option', { value: 'A', text: nameOf('A') }),
+        el('option', { value: 'B', text: nameOf('B') })
+      ]);
+      personSelect.value = filters.person;
+      personSelect.addEventListener('change', () => { filters.person = personSelect.value; expandedEntryId = null; rerenderCurrent(); });
+      fields.push(el('div', {}, [el('label', { for: prefix + '-person', text: context === 'stats' ? 'Auswertung für' : 'Person' }), personSelect]));
+    }
+
+    const periodSelect = el('select', { className: 'select', id: prefix + '-period' }, [
+      el('option', { value: 'all', text: 'Gesamter Zeitraum' }),
+      el('option', { value: '30', text: 'Letzte 30 Tage' }),
+      el('option', { value: '90', text: 'Letzte 3 Monate' }),
+      el('option', { value: '365', text: 'Letzte 12 Monate' }),
+      el('option', { value: 'custom', text: 'Eigener Zeitraum …' })
+    ]);
+    periodSelect.value = filters.period;
+    periodSelect.addEventListener('change', () => {
+      filters.period = periodSelect.value;
+      expandedEntryId = null;
+      rerenderCurrent();
+      const again = $('#' + prefix + '-period');
+      if (again) again.focus();
+    });
+    fields.push(el('div', {}, [el('label', { for: prefix + '-period', text: 'Zeitraum' }), periodSelect]));
+    parts.push(el('div', { className: 'filter-fields' }, fields));
+
+    if (filters.period === 'custom') {
+      const makeDate = (key, label) => {
+        const input = el('input', { type: 'date', className: 'input', id: `${prefix}-${key}`, max: todayIso() });
+        input.value = filters[key];
+        input.addEventListener('change', () => {
+          filters[key] = isValidIsoDate(input.value) ? input.value : '';
+          rerenderCurrent();
+          const again = $(`#${prefix}-${key}`);
+          if (again) again.focus();
+        });
+        return el('div', {}, [el('label', { for: `${prefix}-${key}`, text: label, style: 'display:block;font-weight:600;font-size:.9rem;margin-bottom:.3rem' }), input]);
+      };
+      parts.push(el('div', { className: 'custom-range' }, [makeDate('from', 'Von'), makeDate('to', 'Bis')]));
+      if (filters.from && filters.to && filters.from > filters.to) {
+        parts.push(el('p', { className: 'field-error', role: 'alert', text: 'Das Startdatum liegt nach dem Enddatum. Bitte passe den Zeitraum an.' }));
+      }
+    }
+
+    container.replaceChildren(el('div', { className: 'filter-bar' }, parts));
+  }
+
+  /** Liefert die sichtbaren Einträge gemäß Bereich und Filtern, neueste zuerst. */
+  function getVisibleEntries() {
+    let list = appData.entries.slice();
+    if (sharedViewOpen) {
+      if (filters.person !== 'all') list = list.filter(e => e.profile === filters.person);
+    } else {
+      if (!activeProfile) return [];
+      list = list.filter(e => e.profile === activeProfile);
+    }
+    let from = '', to = '';
+    if (filters.period === 'custom') { from = filters.from; to = filters.to; }
+    else if (filters.period !== 'all') { from = daysAgoIso(Number(filters.period)); }
+    // ISO-Datumsstrings lassen sich direkt alphabetisch vergleichen.
+    if (from) list = list.filter(e => e.date >= from);
+    if (to) list = list.filter(e => e.date <= to);
+    return list.sort((a, b) => (b.date.localeCompare(a.date)) || (b.createdAt.localeCompare(a.createdAt)));
+  }
+
+  function needsProfileState() {
+    return el('div', { className: 'card empty-state' }, [
+      el('span', { className: 'big', 'aria-hidden': 'true', text: '🌿' }),
+      el('p', { text: 'Wähle zuerst dein Profil, um deinen Bereich zu sehen.' }),
+      el('button', { type: 'button', className: 'btn btn-primary', text: 'Profil wählen', onclick: () => showView('form') })
+    ]);
+  }
+
+  /* ==========================================================
+     11. Einträge-Liste
+     ========================================================== */
+  function renderHistory() {
+    renderFilterBar($('#history-filters'), 'history');
+    const content = $('#history-content');
+    if (!sharedViewOpen && !activeProfile) { content.replaceChildren(needsProfileState()); return; }
+
+    const entries = getVisibleEntries();
+    if (!entries.length) {
+      content.replaceChildren(el('div', { className: 'card empty-state' }, [
+        el('span', { className: 'big', 'aria-hidden': 'true', text: '🍃' }),
+        el('p', { text: appData.entries.length ? 'Für diese Auswahl gibt es keine Einträge.' : 'Noch keine Einträge gespeichert.' })
+      ]));
+      return;
+    }
+
+    const list = el('ul', { className: 'entry-list' }, entries.map(renderEntryItem));
+    content.replaceChildren(
+      el('p', { className: 'result-count', text: entries.length === 1 ? '1 Eintrag' : `${entries.length} Einträge` }),
+      list
+    );
+  }
+
+  function renderEntryItem(entry) {
+    const mood = optionOf(MOODS, entry.mood);
+    const expanded = expandedEntryId === entry.id;
+    const detailId = 'detail-' + entry.id;
+    const summary = el('button', {
+      type: 'button', className: 'entry-summary', 'aria-expanded': String(expanded), 'aria-controls': detailId,
+      onclick: () => { expandedEntryId = expanded ? null : entry.id; renderHistory(); const again = document.querySelector(`[aria-controls="${detailId}"]`); if (again) again.focus(); }
+    }, [
+      el('span', { className: 'entry-emoji', 'aria-hidden': 'true', text: mood ? mood.emoji : '' }),
+      el('span', { className: 'entry-main' }, [
+        el('span', { className: 'entry-date' }, [
+          formatDateShort(entry.date),
+          sharedViewOpen ? el('span', { className: 'entry-person' + (entry.profile === 'B' ? ' b' : ''), text: nameOf(entry.profile) }) : null
+        ]),
+        el('span', { className: 'entry-meta', text: `${mood ? mood.label : ''} · ${labelOf(INTIMACY, entry.intimacy)}` })
+      ]),
+      el('span', { className: 'entry-chevron', 'aria-hidden': 'true', text: '▾' })
+    ]);
+
+    const children = [summary];
+    if (expanded) children.push(renderEntryDetail(entry, detailId));
+    return el('li', { className: 'card entry-item' }, children);
+  }
+
+  function renderEntryDetail(entry, detailId) {
+    const rows = [
+      ['Datum', formatDateLong(entry.date)],
+      ['Profil', nameOf(entry.profile)],
+      ['Stimmung', (optionOf(MOODS, entry.mood) || {}).emoji + ' ' + labelOf(MOODS, entry.mood)],
+      ['Was beschäftigt mich', entry.factors.length ? entry.factors.map(f => labelOf(FACTORS, f)).join(', ') : '–'],
+      ['Ergänzung', entry.factorsNote || '–'],
+      ['Intimität', labelOf(INTIMACY, entry.intimacy)]
+    ];
+    if (entry.intimacy === 'sex') rows.push(['Wie habe ich den Sex erlebt', labelOf(SEX_EXPERIENCE, entry.sexExperience) || '–']);
+    if (entry.intimacy !== 'kein_sex') rows.push(['Wie habe ich mich danach gefühlt', labelOf(AFTER_FEELING, entry.afterFeeling) || '–']);
+    rows.push(['Unter Druck gefühlt', labelOf(PRESSURE, entry.pressure) || 'keine Angabe']);
+    rows.push(['Was hätte mir gutgetan', entry.wish || '–']);
+    rows.push(['Gespeichert', formatTimestamp(entry.createdAt) + (entry.updatedAt !== entry.createdAt ? ` · geändert ${formatTimestamp(entry.updatedAt)}` : '')]);
+
+    const dl = el('dl', { className: 'detail-list' });
+    for (const [term, desc] of rows) dl.append(el('div', {}, [el('dt', { text: term }), el('dd', { text: desc })]));
+
+    // Bearbeiten/Löschen nur für das eigene, aktuell gewählte Profil.
+    const own = entry.profile === activeProfile;
+    const actions = own
+      ? el('div', { className: 'btn-row' }, [
+          el('button', { type: 'button', className: 'btn btn-small', text: 'Bearbeiten', onclick: () => startEdit(entry.id) }),
+          el('button', { type: 'button', className: 'btn btn-small btn-danger', text: 'Löschen', onclick: () => deleteEntry(entry.id) })
+        ])
+      : el('p', { className: 'muted small', text: activeProfile
+          ? `Nur ${nameOf(entry.profile)} kann diesen Eintrag im eigenen Profil bearbeiten oder löschen.`
+          : 'Wähle dein Profil, um deine eigenen Einträge zu bearbeiten oder zu löschen.' });
+
+    return el('div', { className: 'entry-detail', id: detailId }, [dl, actions]);
+  }
+
+  async function startEdit(id) {
+    const entry = appData.entries.find(e => e.id === id);
+    if (!entry || entry.profile !== activeProfile) return;
+    if (isFormDirty() && editingId !== id) {
+      const ok = await confirmAction('Ungespeicherte Eingaben verwerfen?',
+        'Im Formular stehen noch ungespeicherte Eingaben. Wenn du diesen Eintrag bearbeitest, gehen sie verloren.',
+        'Verwerfen und bearbeiten', { danger: true });
+      if (!ok) return;
+    }
+    justSaved = false;
+    fillForm(entry);
+    editingId = id;
+    $('#edit-banner-text').textContent = `Du bearbeitest deinen Eintrag vom ${formatDateLong(entry.date)}.`;
+    $('#edit-banner').hidden = false;
+    updateDirtyState();
+    showView('form', { focus: false });
+    $('#edit-banner').scrollIntoView({ block: 'center' });
+    $('#cancel-edit-btn').focus({ preventScroll: true });
+  }
+
+  async function cancelEdit() {
+    if (isFormDirty()) {
+      const ok = await confirmAction('Änderungen verwerfen?', 'Deine Änderungen an diesem Eintrag wurden noch nicht gespeichert.', 'Änderungen verwerfen', { danger: true });
+      if (!ok) return;
+    }
+    resetForm();
+    toast('Bearbeitung abgebrochen.');
+  }
+
+  async function deleteEntry(id) {
+    const entry = appData.entries.find(e => e.id === id);
+    if (!entry || entry.profile !== activeProfile) return;
+    const ok = await confirmAction('Eintrag löschen?',
+      `Der Eintrag vom ${formatDateLong(entry.date)} wird dauerhaft aus diesem Browser entfernt.`,
+      'Endgültig löschen', { danger: true });
+    if (!ok) return;
+    const before = appData.entries;
+    appData.entries = appData.entries.filter(e => e.id !== id);
+    if (!persist()) {
+      appData.entries = before;
+      showInfo('Löschen nicht möglich', 'Die Änderung konnte nicht gespeichert werden.');
+      return;
+    }
+    if (editingId === id) resetForm();
+    expandedEntryId = null;
+    renderHistory();
+    toast('Eintrag gelöscht.');
+    $('#history-title').focus();
+  }
+
+  /* ==========================================================
+     12. Auswertung (neutral, ohne Ziele oder Bewertungen)
+     ========================================================== */
+  function countBy(entries, list, getter) {
+    return list.map(opt => ({ label: opt.label, emoji: opt.emoji, count: entries.filter(e => getter(e, opt.value)).length }));
+  }
+
+  function barList(rows, total, { hideZero = false } = {}) {
+    const visible = hideZero ? rows.filter(r => r.count > 0) : rows;
+    if (!visible.length) return el('p', { className: 'muted', text: 'Keine Angaben in dieser Auswahl.' });
+    return el('ul', { className: 'bar-list' }, visible.map(row => {
+      const percent = total ? Math.round(row.count / total * 100) : 0;
+      return el('li', { className: 'bar-row' }, [
+        el('span', { className: 'bar-label', text: (row.emoji ? row.emoji + ' ' : '') + row.label }),
+        el('span', { className: 'bar-value', text: `${row.count}× · ${percent} %` }),
+        el('span', { className: 'bar-track', 'aria-hidden': 'true' }, el('span', { className: 'bar-fill', style: `width:${percent}%;display:block` }))
+      ]);
+    }));
+  }
+
+  function mostCommon(entries, list, getter) {
+    let best = null;
+    for (const opt of list) {
+      const n = entries.filter(e => getter(e) === opt.value).length;
+      if (n > 0 && (!best || n > best.count)) best = { label: opt.label, count: n };
+    }
+    return best;
+  }
+
+  /** Unverbindliche Beobachtungen: zeigt nur, was gemeinsam eingetragen wurde – keine Ursachen. */
+  function buildObservations(entries) {
+    const observations = [];
+    if (entries.length < 4) return observations;
+    const factorStats = FACTORS
+      .map(f => ({ factor: f, matching: entries.filter(e => e.factors.includes(f.value)) }))
+      .filter(x => x.matching.length >= 3)
+      .sort((a, b) => b.matching.length - a.matching.length)
+      .slice(0, 4);
+    for (const { factor, matching } of factorStats) {
+      const mood = mostCommon(matching, MOODS, e => e.mood);
+      const intimacy = mostCommon(matching, INTIMACY, e => e.intimacy);
+      if (mood && intimacy) {
+        observations.push(`In den ${matching.length} Einträgen mit „${factor.label}“ wurde als Stimmung am häufigsten „${mood.label}“ (${mood.count}×) und bei der Intimität am häufigsten „${intimacy.label}“ (${intimacy.count}×) eingetragen.`);
+      }
+    }
+    const withPressure = entries.filter(e => e.pressure === 'ja' || e.pressure === 'ein_bisschen');
+    if (withPressure.length >= 2) {
+      const factor = mostCommon(
+        withPressure.flatMap(e => e.factors.map(f => ({ f }))), FACTORS, x => x.f);
+      if (factor) observations.push(`In Einträgen, in denen etwas Druck angegeben wurde (${withPressure.length}), wurde „${factor.label}“ am häufigsten mit ausgewählt (${factor.count}×).`);
+    }
+    return observations;
+  }
+
+  function renderStats() {
+    renderFilterBar($('#stats-filters'), 'stats');
+    const content = $('#stats-content');
+    if (!sharedViewOpen && !activeProfile) { content.replaceChildren(needsProfileState()); return; }
+
+    const entries = getVisibleEntries();
+    const total = entries.length;
+    if (!total) {
+      content.replaceChildren(el('div', { className: 'card empty-state' }, [
+        el('span', { className: 'big', 'aria-hidden': 'true', text: '🍃' }),
+        el('p', { text: 'Für diese Auswahl gibt es noch keine Einträge.' })
+      ]));
+      return;
+    }
+
+    const scopeLabel = sharedViewOpen
+      ? (filters.person === 'all' ? 'beide Profile zusammen' : nameOf(filters.person))
+      : nameOf(activeProfile);
+
+    const blocks = [];
+    blocks.push(el('div', { className: 'card' }, [
+      el('p', { className: 'stat-total', text: total === 1 ? '1 Eintrag' : `${total} Einträge` }),
+      el('p', { className: 'muted small', style: 'margin:0', text: `Ausgewertet für: ${scopeLabel}` })
+    ]));
+
+    blocks.push(el('div', { className: 'card stat-block' }, [
+      el('h3', { text: 'Welche Stimmungen wurden ausgewählt?' }),
+      barList(countBy(entries, MOODS, (e, v) => e.mood === v), total)
+    ]));
+
+    blocks.push(el('div', { className: 'card stat-block' }, [
+      el('h3', { text: 'Was wurde häufig genannt?' }),
+      el('p', { className: 'muted small', text: 'Anteil der Einträge, in denen der Punkt ausgewählt wurde (Mehrfachauswahl möglich).' }),
+      barList(countBy(entries, FACTORS, (e, v) => e.factors.includes(v)).sort((a, b) => b.count - a.count), total, { hideZero: true })
+    ]));
+
+    blocks.push(el('div', { className: 'card stat-block' }, [
+      el('h3', { text: 'Was war passend?' }),
+      barList(countBy(entries, INTIMACY, (e, v) => e.intimacy === v), total)
+    ]));
+
+    const answeredPressure = entries.filter(e => e.pressure);
+    blocks.push(el('div', { className: 'card stat-block' }, [
+      el('h3', { text: 'Wurde Druck empfunden?' }),
+      answeredPressure.length
+        ? barList(countBy(answeredPressure, PRESSURE, (e, v) => e.pressure === v), answeredPressure.length)
+        : el('p', { className: 'muted', text: 'Diese freiwillige Frage wurde in der Auswahl nicht beantwortet.' }),
+      total - answeredPressure.length > 0
+        ? el('p', { className: 'muted small', style: 'margin:.8rem 0 0', text: `${total - answeredPressure.length} ${total - answeredPressure.length === 1 ? 'Eintrag' : 'Einträge'} ohne Angabe.` })
+        : null
+    ]));
+
+    const observations = buildObservations(entries);
+    blocks.push(el('div', { className: 'card stat-block' }, [
+      el('h3', { text: 'Unverbindliche Beobachtungen' }),
+      el('div', { className: 'notice', style: 'margin-bottom:.8rem' }, [
+        el('p', { text: 'Diese Hinweise zeigen nur, welche Angaben gemeinsam vorkamen. Sie sagen nichts über Ursachen aus, sind keine Bewertung und können sich jederzeit ändern.' })
+      ]),
+      observations.length
+        ? el('ul', { className: 'observation-list' }, observations.map(o => el('li', { text: o })))
+        : el('p', { className: 'muted', text: 'Für Beobachtungen braucht es noch ein paar Einträge mehr. Das ist völlig in Ordnung.' })
+    ]));
+
+    content.replaceChildren(...blocks);
+  }
+
+  /* ==========================================================
+     13. Einstellungen, Export, Import, Löschen
+     ========================================================== */
+  function renderSettings() {
+    $('#name-a').value = nameOf('A');
+    $('#name-b').value = nameOf('B');
+    $('#names-error').hidden = true;
+    const n = appData.entries.length;
+    $('#storage-summary').textContent = storageAvailable
+      ? `Aktuell gespeichert: ${n === 1 ? '1 Eintrag' : n + ' Einträge'}.`
+      : 'Achtung: Der Browserspeicher ist hier nicht verfügbar (z. B. privater Modus). Einträge können nicht dauerhaft gespeichert werden.';
+  }
+
+  function handleNamesSubmit(event) {
+    event.preventDefault();
+    const nameA = cleanText($('#name-a').value, MAX_NAME_LENGTH);
+    const nameB = cleanText($('#name-b').value, MAX_NAME_LENGTH);
+    const errorNode = $('#names-error');
+    let message = '';
+    if (!nameA || !nameB) message = 'Bitte gib für beide Profile einen Namen ein.';
+    else if (nameA.toLocaleLowerCase('de') === nameB.toLocaleLowerCase('de')) message = 'Bitte wähle zwei unterschiedliche Namen, damit die Profile nicht verwechselt werden.';
+    if (message) {
+      errorNode.textContent = message;
+      errorNode.hidden = false;
+      (!nameA ? $('#name-a') : $('#name-b')).focus();
+      return;
+    }
+    const previous = appData.settings.names;
+    appData.settings.names = { A: nameA, B: nameB };
+    if (!persist()) {
+      appData.settings.names = previous;
+      showInfo('Speichern nicht möglich', 'Die Namen konnten nicht gespeichert werden.');
+      return;
+    }
+    errorNode.hidden = true;
+    renderNames();
+    toast('Namen gespeichert.');
+  }
+
+  function exportData() {
+    if (!appData.entries.length) {
+      showInfo('Nichts zu exportieren', 'Es sind noch keine Einträge gespeichert.');
+      return;
+    }
+    const payload = {
+      app: 'Our Mood',
+      version: DATA_VERSION,
+      exportedAt: new Date().toISOString(),
+      settings: appData.settings,
+      entries: appData.entries
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = el('a', { href: url, download: `our-mood-backup-${todayIso()}.json` });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast('Backup-Datei wurde erstellt.');
+  }
+
+  async function handleImportFile(event) {
+    const input = event.target;
+    const file = input.files && input.files[0];
+    input.value = ''; // gleiche Datei kann später erneut gewählt werden
+    if (!file) return;
+
+    if (file.size > MAX_IMPORT_BYTES) {
+      showInfo('Datei zu groß', 'Diese Datei ist größer als 5 MB und sieht nicht wie ein Our-Mood-Backup aus.');
+      return;
+    }
+    let parsed;
+    try {
+      const text = await file.text();
+      parsed = JSON.parse(text); // reines Parsen – es wird niemals Code ausgeführt
+    } catch (err) {
+      showInfo('Import nicht möglich', 'Die Datei konnte nicht gelesen werden. Bitte wähle eine JSON-Datei, die mit „Alle Einträge exportieren“ erstellt wurde.');
+      return;
+    }
+    const result = normalizeData(parsed);
+    if (!result.ok) {
+      showInfo('Import nicht möglich', 'Diese Datei scheint kein Our-Mood-Backup zu sein. Es wurde nichts verändert.');
+      return;
+    }
+    if (!result.validCount) {
+      showInfo('Keine gültigen Einträge', `Die Datei enthält keine gültigen Einträge${result.invalidCount ? ` (${result.invalidCount} fehlerhafte wurden übersprungen)` : ''}. Es wurde nichts verändert.`);
+      return;
+    }
+
+    const summary = [`In der Datei wurden ${result.validCount} gültige ${result.validCount === 1 ? 'Eintrag' : 'Einträge'} gefunden.`];
+    if (result.invalidCount) summary.push(`${result.invalidCount} fehlerhafte ${result.invalidCount === 1 ? 'Eintrag wird' : 'Einträge werden'} übersprungen.`);
+    summary.push('„Zusammenführen“ ergänzt fehlende Einträge. „Alles ersetzen“ löscht die aktuellen Einträge in diesem Browser und übernimmt das Backup.');
+
+    const choice = await openDialog({
+      title: 'Backup importieren',
+      message: summary,
+      buttons: [
+        { label: 'Abbrechen', value: 'cancel' },
+        { label: 'Alles ersetzen', value: 'replace', variant: 'danger' },
+        { label: 'Zusammenführen', value: 'merge', variant: 'primary', autofocus: true }
+      ]
+    });
+    if (!choice.action) return;
+
+    const previous = appData;
+    if (choice.action === 'replace') {
+      const sure = await confirmAction('Wirklich alles ersetzen?',
+        `Die ${appData.entries.length} aktuell gespeicherten Einträge werden durch das Backup ersetzt.`, 'Ja, ersetzen', { danger: true });
+      if (!sure) return;
+      appData = {
+        version: DATA_VERSION,
+        settings: { names: result.hasNames ? result.data.settings.names : { ...appData.settings.names } },
+        entries: result.data.entries
+      };
+    } else {
+      const existingIds = new Set(appData.entries.map(e => e.id));
+      const existingKeys = new Set(appData.entries.map(e => e.profile + '|' + contentKey(e)));
+      const additions = result.data.entries.filter(e => !existingIds.has(e.id) && !existingKeys.has(e.profile + '|' + contentKey(e)));
+      appData = { ...appData, entries: appData.entries.concat(additions) };
+      result.added = additions.length;
+    }
+
+    if (!persist()) {
+      appData = previous;
+      showInfo('Import nicht möglich', 'Die Daten konnten nicht im Browser gespeichert werden. Es wurde nichts verändert.');
+      return;
+    }
+    if (editingId && !appData.entries.some(e => e.id === editingId)) resetForm();
+    expandedEntryId = null;
+    renderNames();
+    renderSettings();
+    if (choice.action === 'merge') {
+      const skipped = result.validCount - result.added;
+      toast(`${result.added} ${result.added === 1 ? 'Eintrag' : 'Einträge'} importiert${skipped ? `, ${skipped} bereits vorhanden` : ''}.`);
+    } else {
+      toast(`Backup übernommen: ${appData.entries.length} Einträge.`);
+    }
+  }
+
+  async function deleteAllData() {
+    const res = await openDialog({
+      title: 'Alle Daten löschen?',
+      message: [
+        'Alle Einträge beider Profile und die Namen werden dauerhaft aus diesem Browser entfernt. Das kann nicht rückgängig gemacht werden.',
+        'Tipp: Exportiere vorher ein Backup, falls du die Daten behalten möchtest.'
+      ],
+      input: { label: 'Zur Bestätigung bitte LÖSCHEN eingeben' },
+      buttons: [
+        { label: 'Abbrechen', value: 'cancel' },
+        { label: 'Alles löschen', value: 'delete', variant: 'danger' }
+      ]
+    });
+    if (res.action !== 'delete') return;
+    if (res.input.trim().toUpperCase() !== 'LÖSCHEN') {
+      showInfo('Nicht gelöscht', 'Die Bestätigung stimmte nicht. Es wurde nichts gelöscht.');
+      return;
+    }
+    try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignorieren */ }
+    appData = defaultData();
+    activeProfile = null;
+    sharedViewOpen = false;
+    justSaved = false;
+    expandedEntryId = null;
+    resetForm();
+    renderNames();
+    renderSettings();
+    renderFormView();
+    toast('Alle Daten wurden gelöscht.');
+  }
+
+  /* ==========================================================
+     14. Ereignisse verbinden
+     ========================================================== */
+  $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+  $$('.profile-btn').forEach(btn => btn.addEventListener('click', () => selectProfile(btn.dataset.profile)));
+  $('#switch-profile-btn').addEventListener('click', async () => {
+    if (await leaveProfile()) { $('#profile-picker h2').setAttribute('tabindex', '-1'); $('#profile-picker h2').focus(); }
+  });
+  $('#cancel-edit-btn').addEventListener('click', cancelEdit);
+
+  form.addEventListener('submit', handleSubmit);
+  form.addEventListener('change', event => {
+    if (event.target.name === 'intimacy') updateConditionalQuestions();
+    if (event.target === dateInput) updateDateDisplay();
+    updateProgress();
+    updateDirtyState();
+  });
+  form.addEventListener('input', () => { updateDateDisplay(); updateProgress(); updateDirtyState(); });
+
+  // Fortschrittsschritte: zum Abschnitt springen und Fokus setzen
+  $$('.step-link', form).forEach(link => link.addEventListener('click', event => {
+    event.preventDefault();
+    const target = $(link.getAttribute('href'));
+    target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    const focusable = target.querySelector('input, textarea, button');
+    if (focusable) focusable.focus({ preventScroll: true });
+  }));
+
+  $('#reset-btn').addEventListener('click', async () => {
+    if (isFormDirty()) {
+      const ok = await confirmAction('Formular leeren?', 'Alle noch nicht gespeicherten Eingaben werden entfernt.', 'Formular leeren', { danger: true });
+      if (!ok) return;
+    }
+    resetForm();
+    toast('Formular geleert.');
+  });
+
+  $('#saved-done-btn').addEventListener('click', () => {
+    justSaved = false;
+    activeProfile = null;
+    sharedViewOpen = false;
+    resetForm();
+    renderFormView();
+    $('#profile-picker h2').setAttribute('tabindex', '-1');
+    $('#profile-picker h2').focus();
+  });
+  $('#saved-history-btn').addEventListener('click', () => {
+    justSaved = false;
+    renderFormView();
+    showView('history');
+  });
+
+  $('#names-form').addEventListener('submit', handleNamesSubmit);
+  $('#export-btn').addEventListener('click', exportData);
+  $('#import-input').addEventListener('change', handleImportFile);
+  $('#delete-all-btn').addEventListener('click', deleteAllData);
+
+  // Warnung beim Schließen/Neuladen, wenn Eingaben ungespeichert sind
+  window.addEventListener('beforeunload', event => {
+    if (isFormDirty()) { event.preventDefault(); event.returnValue = ''; }
+  });
+
+  // Wenn die App z. B. über Nacht offen war: Datum eines unberührten Formulars auf "heute" aktualisieren
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!editingId && !isFormDirty() && dateInput.value !== todayIso()) {
+      dateInput.value = todayIso();
+      updateDateDisplay();
+      takeSnapshot();
+    }
+    updateDateDisplay();
+  });
+
+  /* ==========================================================
+     15. Start
+     ========================================================== */
+  if (!storageAvailable) {
+    showStorageWarning('Der Browserspeicher ist nicht verfügbar (z. B. privater Modus oder blockierte Websitedaten). Einträge können in diesem Zustand nicht gespeichert werden.');
+  }
+  renderNames();
+  resetForm();
+  showView('form', { focus: false });
+})();
+</script>
+</body>
+</html>
