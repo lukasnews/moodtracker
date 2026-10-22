@@ -20,6 +20,7 @@ Zum lokalen Ausprobieren öffnest du `index.html` einfach per Doppelklick im Bro
 - **Lust & Wünsche:** Lust-Skala 1–5, gewünschte Häufigkeit, „Was würde meine Lust fördern?“, Wunsch nach mehr Initiative; bei Nähe oder Sex zusätzlich „Wer hat die Initiative ergriffen?“.
 - **Mehrere Einträge pro Tag** mit Tageszeit (morgens, mittags, abends, nachts) – z. B. morgens „nicht so gut“, abends „sehr gut“. Rückfrage nur bei gleicher Tageszeit.
 - **Kleiner Monatskalender** über der Eintragsliste: zeigt pro Tag die Stimmungs-Emojis; Antippen zeigt die Einträge dieses Tages.
+- **Filter „Anzeigen“** in der Eintragsliste: alle Einträge, mit Sex, mit Kuscheln/Nähe, mit Selbstbefriedigung oder mit viel Lust (4–5). Der Kalender hebt die passenden Tage hervor.
 - **Lust-Signal:** „Ich hätte heute Lust“ (optional mit kurzer Nachricht). Die andere Person sieht es beim Öffnen ihres Profils; um Mitternacht verschwindet es.
 - **Wunschliste zu zweit:** Ideen für Dates, Neues und Orte – beide können ergänzen, abhaken und löschen.
 - **Selbstbefriedigung (optional):** In den Einstellungen für beide gemeinsam einschaltbar (gleichberechtigt); Ja/Nein-Frage im Formular (auch Schnell-Eintrag) und Übersicht in der Auswertung.
