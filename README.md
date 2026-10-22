@@ -2,7 +2,7 @@
 
 *Ein Moment für uns – ohne Druck, ohne Erwartungen.*
 
-Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimmung, Nähe und Intimität festhalten könnt. Die App läuft im Browser: ohne Konto, ohne Tracking. Optional könnt ihr eure Handys **verschlüsselt über ein privates GitHub-Repository synchronisieren** und Lust-Signale als Push über euren eigenen ntfy-Server senden.
+Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimmung, Nähe und Intimität festhalten könnt. Die App läuft im Browser: ohne Konto, ohne Tracking. Optional könnt ihr eure Geräte **verschlüsselt über euren Raspberry Pi oder ein privates GitHub-Repository synchronisieren** und Lust-Signale als Push über euren eigenen ntfy-Server senden.
 
 ## Dateien
 
@@ -10,6 +10,8 @@ Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimm
 |---|---|
 | `index.html` | Die komplette App (HTML, CSS und JavaScript in einer Datei). Nur diese Datei wird für GitHub Pages gebraucht. |
 | `README.md` | Diese Anleitung. |
+| `CNAME` | Eigene Domain für GitHub Pages. |
+| `sync-server/` | Optionaler Sync-Server für den Raspberry Pi (Docker), mit eigener Anleitung. |
 
 Zum lokalen Ausprobieren öffnest du `index.html` einfach per Doppelklick im Browser.
 
@@ -61,7 +63,18 @@ Die Datei `CNAME` im Repository enthält die Domain `moods.chaoten.online`. Dami
 
 Hinweis: Gespeicherte Einträge gehören immer zu genau einer Adresse. Einträge, die unter `…github.io/…` gespeichert wurden, sind unter `moods.chaoten.online` nicht sichtbar. Übertragen lassen sie sich über Export und Import.
 
-## Sync zwischen zwei Handys (verschlüsselt über GitHub)
+## Sync über euren Raspberry Pi (empfohlen)
+
+Mit dem kleinen Sync-Server im Ordner [`sync-server/`](sync-server/README.md) braucht ein neues Gerät nur noch **euer Paar-Passwort**: Seite öffnen, **„🔗 Mit Paar-Passwort verbinden“** tippen, fertig. Es gibt keinen Token und keinen Link.
+
+- Der Server läuft als Docker-Container auf dem Pi und ist unter `https://sync.chaoten.online` erreichbar, genauso wie ntfy.
+- Er speichert nur verschlüsselte Daten und kennt das Passwort nicht. Fehlversuche werden gebremst.
+- **Einrichtung Schritt für Schritt:** siehe [`sync-server/README.md`](sync-server/README.md).
+- **Passwort ändern:** ⚙️ → Sync → „Sync-Passwort ändern“. Danach auf den anderen Geräten das neue Passwort eintragen.
+
+Die GitHub-Variante (nächster Abschnitt) bleibt als Alternative verfügbar.
+
+## Sync über GitHub (Alternative)
 
 Damit ihr beide auf euren **eigenen Handys** dieselben Einträge, die Wunschliste und die Lust-Signale seht, gleicht die App ihre Daten über **ein privates GitHub-Repository** ab. Die Daten liegen dort als eine einzige Datei (`our-mood-data.enc.json`), die **auf dem Handy mit AES-256 verschlüsselt** wird. Der Schlüssel ist euer gemeinsames Sync-Passwort. GitHub und alle anderen sehen nur unlesbare Daten.
 
@@ -105,6 +118,6 @@ Die App kann das Lust-Signal über euren eigenen ntfy-Server **ntfy.chaoten.onli
 
 ## Datenschutz & Sicherheit
 
-- Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy erlaubt Netzwerkverbindungen nur zum eigenen ntfy-Server (Push) und zur GitHub-API (verschlüsselter Sync): `connect-src https://ntfy.chaoten.online https://api.github.com`.
+- Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy erlaubt Netzwerkverbindungen nur zu euren eigenen Servern (ntfy-Push, Sync auf dem Pi) und zur GitHub-API (optionaler Sync): `connect-src https://ntfy.chaoten.online https://sync.chaoten.online https://api.github.com`.
 - Nutzereingaben werden nur als Text (`textContent`) angezeigt, nie als HTML. `eval` wird nicht verwendet.
 - Importierte Dateien werden nur mit `JSON.parse` gelesen und feldweise geprüft. Unbekannte Felder und ungültige Einträge werden verworfen.

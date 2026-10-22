@@ -6,8 +6,8 @@
 <!-- Privatsphäre: keine Suchmaschinen-Indexierung, keine Referrer-Weitergabe -->
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<!-- Sicherheitsrichtlinie: Netzwerkverbindungen sind NUR zum eigenen ntfy-Server (Push) und zur GitHub-API (verschlüsselter Sync) erlaubt -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://ntfy.chaoten.online https://api.github.com; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<!-- Sicherheitsrichtlinie: Netzwerkverbindungen NUR zu euren eigenen Servern (ntfy-Push, Sync auf dem Pi) und zur GitHub-API (optionaler Sync) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://ntfy.chaoten.online https://sync.chaoten.online https://api.github.com; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="theme-color" content="#f6f1e9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1f1c1a" media="(prefers-color-scheme: dark)">
 <title>Our Mood</title>
@@ -157,6 +157,9 @@ details.settings-collapsible > summary h2 { margin: 0; flex: 1; }
 details.settings-collapsible[open] > summary { margin-bottom: .75rem; }
 .badge.on { background: var(--sel-bg); color: var(--sel-text); border-color: transparent; }
 .badge.warn { background: var(--rose-soft); color: var(--rose-strong); border-color: transparent; }
+.connect-hint { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px dashed var(--line); text-align: center; }
+.connect-hint p { margin-bottom: .5rem; }
+#sync-form .segmented { margin-bottom: .2rem; }
 .pw-change { margin-top: 1.4rem; padding-top: 1.1rem; border-top: 1px dashed var(--line); }
 .pw-change h3 { font-size: 1.05rem; margin-bottom: .4rem; }
 
@@ -619,6 +622,10 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <span class="profile-name" data-name="B">Person B</span>
         </button>
       </div>
+      <div class="connect-hint" id="connect-hint" hidden>
+        <p class="muted small">Neues Gerät? Mit eurem Paar-Passwort sind alle Einträge sofort da.</p>
+        <button type="button" class="btn btn-small" id="quick-connect-btn">🔗 Mit Paar-Passwort verbinden</button>
+      </div>
     </div>
 
     <!-- Formularbereich (erst nach Profilwahl sichtbar) -->
@@ -932,13 +939,24 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         <span class="collapse-icon" aria-hidden="true"></span>
       </summary>
       <div class="collapsible-body">
-      <p class="muted">Gleicht Einträge, Wunschliste, Lust-Signale und Einstellungen über ein <strong>privates GitHub-Repository</strong> ab. Alles wird vorher auf dem Handy mit eurem Sync-Passwort verschlüsselt (AES-256) – GitHub sieht nur unlesbare Daten.</p>
+      <p class="muted">Gleicht Einträge, Wunschliste, Lust-Signale und Einstellungen zwischen euren Geräten ab. Alles wird vorher auf dem Gerät mit eurem Paar-Passwort verschlüsselt (AES-256) – der Speicherort sieht nur unlesbare Daten.</p>
       <form id="sync-form" novalidate autocomplete="off">
-        <label class="field-label" for="sync-repo">Privates Repository <span class="field-hint">(besitzer/name)</span></label>
-        <input id="sync-repo" class="input" type="text" maxlength="140" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="lukasnews/moodtracker-data">
-        <label class="field-label" for="sync-token">GitHub-Token</label>
-        <input id="sync-token" class="input" type="password" maxlength="255" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
-        <label class="field-label" for="sync-pass">Gemeinsames Sync-Passwort <span class="field-hint">(auf beiden Handys gleich, mind. 8 Zeichen)</span></label>
+        <p class="field-label" id="sync-mode-label" style="margin-top:0">Speicherort</p>
+        <div class="segmented" role="group" aria-labelledby="sync-mode-label">
+          <button type="button" id="sync-mode-server" aria-pressed="true">Eigener Server (Pi)</button>
+          <button type="button" id="sync-mode-github" aria-pressed="false">GitHub</button>
+        </div>
+        <div id="sync-server-fields">
+          <label class="field-label" for="sync-server">Server-Adresse</label>
+          <input id="sync-server" class="input" type="url" maxlength="200" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="https://sync.chaoten.online">
+        </div>
+        <div id="sync-github-fields" hidden>
+          <label class="field-label" for="sync-repo">Privates Repository <span class="field-hint">(besitzer/name)</span></label>
+          <input id="sync-repo" class="input" type="text" maxlength="140" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="lukasnews/moodtracker-data">
+          <label class="field-label" for="sync-token">GitHub-Token</label>
+          <input id="sync-token" class="input" type="password" maxlength="255" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+        </div>
+        <label class="field-label" for="sync-pass">Paar-Passwort <span class="field-hint">(auf allen Geräten gleich, mind. 8 Zeichen)</span></label>
         <input id="sync-pass" class="input" type="password" maxlength="200" autocomplete="new-password" spellcheck="false">
         <p class="muted small" style="margin:.5rem 0 0">Ohne dieses Passwort sind die Daten nicht lesbar – es kann nicht wiederhergestellt werden.</p>
         <p class="field-error" id="sync-error" role="alert" hidden></p>
@@ -2340,13 +2358,20 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   const GITHUB_API = 'https://api.github.com';
   const REPO_PATTERN = /^[A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100}$/;
   const PBKDF2_ITERATIONS = 310000;
-  const emptySyncConfig = () => ({ repo: '', token: '', passphrase: '', lastSync: '' });
+  const SYNC_SERVER_DEFAULT = 'https://sync.chaoten.online';
+  const AUTH_SALT = 'our-mood-auth-v1'; // fester App-Salt nur für den Anmelde-Token (nicht für die Verschlüsselung)
+  const emptySyncConfig = () => ({ mode: 'server', server: SYNC_SERVER_DEFAULT, repo: '', token: '', passphrase: '', lastSync: '' });
+  const SERVER_PATTERN = /^https:\/\/[A-Za-z0-9.-]+(:\d+)?$/;
 
   function loadSyncConfig() {
     try {
       const raw = JSON.parse(window.localStorage.getItem(SYNC_KEY) || 'null');
       if (!raw || typeof raw !== 'object') return emptySyncConfig();
+      // Ältere Konfigurationen (nur GitHub) bleiben gültig
+      const mode = raw.mode === 'server' || raw.mode === 'github' ? raw.mode : (raw.repo ? 'github' : 'server');
       return {
+        mode,
+        server: typeof raw.server === 'string' && SERVER_PATTERN.test(raw.server) ? raw.server : SYNC_SERVER_DEFAULT,
         repo: typeof raw.repo === 'string' && REPO_PATTERN.test(raw.repo) ? raw.repo : '',
         token: typeof raw.token === 'string' ? raw.token.slice(0, 255) : '',
         passphrase: typeof raw.passphrase === 'string' ? raw.passphrase.slice(0, 200) : '',
@@ -2362,7 +2387,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   let syncConfig = loadSyncConfig();
   const cryptoAvailable = () => !!(window.crypto && window.crypto.subtle);
   function syncReady() {
-    return !!(syncConfig && syncConfig.repo && syncConfig.token && syncConfig.passphrase && cryptoAvailable());
+    if (!syncConfig || !syncConfig.passphrase || !cryptoAvailable()) return false;
+    return syncConfig.mode === 'server' ? !!syncConfig.server : !!(syncConfig.repo && syncConfig.token);
   }
 
   class SyncError extends Error {
@@ -2374,7 +2400,12 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       case 'passphrase': return 'Die Daten im Repository lassen sich nicht entschlüsseln. Wurde das Sync-Passwort auf dem anderen Handy geändert? Dann hier das neue Passwort eintragen und „Speichern & synchronisieren“ tippen.';
       case 'format': return 'Die Sync-Datei im Repository hat ein unbekanntes Format. Es wurde nichts überschrieben.';
       case 'conflict': return 'Gleichzeitige Änderungen – bitte gleich noch einmal synchronisieren.';
-      case 'network': return 'Keine Verbindung zu GitHub. Bitte Internetverbindung prüfen.';
+      case 'network': return syncConfig.mode === 'server'
+        ? 'Sync-Server nicht erreichbar. Läuft der Pi? Internetverbindung prüfen.'
+        : 'Keine Verbindung zu GitHub. Bitte Internetverbindung prüfen.';
+      case 'auth': return 'Das Paar-Passwort passt nicht (401). Wurde es auf einem anderen Gerät geändert? Dann hier das neue Passwort eintragen und „Speichern & synchronisieren“ tippen.';
+      case 'ratelimit': return 'Zu viele Fehlversuche. Bitte etwa 15 Minuten warten und dann erneut versuchen.';
+      case 'server': return `Der Sync-Server meldet einen Fehler (HTTP ${status}).`;
       case 'nocrypto': return 'Dieser Browser unterstützt die nötige Verschlüsselung nicht (nur über https möglich).';
       case 'http':
         if (status === 401) return 'GitHub-Token ungültig oder abgelaufen (401).';
@@ -2499,6 +2530,67 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     return { conflict: false };
   }
 
+  /* ---------- Eigener Sync-Server (Pi) ----------
+     Anmeldung mit einem aus dem Passwort abgeleiteten Token (PBKDF2, fester App-Salt).
+     Der Server speichert davon nur einen Hash. Verschlüsselt wird separat (zufälliger Salt). */
+  const authTokenCache = new Map();
+  async function deriveAuthToken(passphrase) {
+    if (authTokenCache.has(passphrase)) return authTokenCache.get(passphrase);
+    const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt: new TextEncoder().encode(AUTH_SALT), iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' }, base, 256);
+    const hex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+    authTokenCache.clear();
+    authTokenCache.set(passphrase, hex);
+    return hex;
+  }
+
+  async function serverFetch(path, options = {}, passphrase = syncConfig.passphrase) {
+    const token = await deriveAuthToken(passphrase);
+    let res;
+    try {
+      res = await fetch(syncConfig.server + path, {
+        ...options,
+        headers: { 'Authorization': 'Bearer ' + token, ...(options.headers || {}) },
+        cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer'
+      });
+    } catch (err) {
+      throw new SyncError('network');
+    }
+    if (res.status === 401) throw new SyncError('auth', 401);
+    if (res.status === 429) throw new SyncError('ratelimit', 429);
+    return res;
+  }
+
+  async function serverRead() {
+    const res = await serverFetch('/v1/data');
+    if (res.status === 404) return { exists: false, ref: 0 };
+    if (!res.ok) throw new SyncError('server', res.status);
+    const json = await res.json();
+    if (!json || !Number.isInteger(json.version)) throw new SyncError('format');
+    return { exists: true, ref: json.version, envelope: json.data };
+  }
+
+  async function serverWrite(envelope, version) {
+    const res = await serverFetch('/v1/data', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ version: version || 0, data: envelope })
+    });
+    if (res.status === 409) return { conflict: true };
+    if (!res.ok) throw new SyncError('server', res.status);
+    return { conflict: false };
+  }
+
+  /* Gemeinsame Schnittstelle für beide Speicherorte */
+  async function backendRead() {
+    if (syncConfig.mode === 'server') return serverRead();
+    const remote = await ghRead();
+    return { ...remote, ref: remote.sha || '' };
+  }
+  async function backendWrite(envelope, ref) {
+    return syncConfig.mode === 'server' ? serverWrite(envelope, ref) : ghWrite(envelope, ref);
+  }
+
   /* ---------- Zusammenführen ---------- */
   function mergeTombstones(a, b) {
     const out = { ...a };
@@ -2557,7 +2649,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     badge.textContent = !syncReady() ? 'aus' : state === 'error' ? 'Problem' : 'aktiv';
     badge.className = 'badge' + (!syncReady() ? '' : state === 'error' ? ' warn' : ' on');
     $('#sync-pw-change').hidden = !syncReady();
-    $('#sync-connect').hidden = !syncReady();
+    $('#sync-connect').hidden = !(syncReady() && syncConfig.mode === 'github');
+    if (typeof updateConnectHint === 'function') updateConnectHint();
     const footer = $('#footer-sync');
     if (!syncReady()) footer.textContent = 'läuft lokal in deinem Browser';
     else if (state === 'error') footer.textContent = 'Sync-Problem – siehe Einstellungen';
@@ -2593,7 +2686,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     setSyncStatus('Synchronisiere …', '');
     try {
       for (let attempt = 0; attempt < 4; attempt++) {
-        const remote = await ghRead();
+        const remote = await backendRead();
         let remoteData = null;
         if (remote.exists) {
           const plain = await decryptData(remote.envelope);
@@ -2611,8 +2704,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         }
         if (!remoteData || canonical(remoteData) !== mergedKey) {
           const envelope = await encryptData(merged, remote.exists ? remote.envelope.salt : '', remote.exists ? remote.envelope.iter : 0);
-          const write = await ghWrite(envelope, remote.exists ? remote.sha : '');
-          if (write.conflict) continue; // anderes Handy war schneller → neu lesen & zusammenführen
+          const write = await backendWrite(envelope, remote.exists ? remote.ref : 0);
+          if (write.conflict) continue; // anderes Gerät war schneller → neu lesen & zusammenführen
         }
         syncConfig.lastSync = new Date().toISOString();
         saveSyncConfig();
@@ -2635,12 +2728,23 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   }
 
   /* ---------- Einstellungen ---------- */
+  let syncFormMode = 'server';
+  function applySyncFormMode(mode) {
+    syncFormMode = mode;
+    $('#sync-mode-server').setAttribute('aria-pressed', String(mode === 'server'));
+    $('#sync-mode-github').setAttribute('aria-pressed', String(mode === 'github'));
+    $('#sync-server-fields').hidden = mode !== 'server';
+    $('#sync-github-fields').hidden = mode !== 'github';
+    $('#sync-connect').hidden = !(syncReady() && syncConfig.mode === 'github' && mode === 'github');
+  }
   function renderSyncSettings() {
+    $('#sync-server').value = syncConfig.server || SYNC_SERVER_DEFAULT;
     $('#sync-repo').value = syncConfig.repo;
     $('#sync-token').value = syncConfig.token;
     $('#sync-pass').value = syncConfig.passphrase;
     $('#sync-error').hidden = true;
     setSyncStatus(describeLastSync(), syncReady() ? (syncConfig.lastSync ? 'ok' : '') : '');
+    applySyncFormMode(syncConfig.mode || 'server');
   }
   function showSyncError(text) {
     const node = $('#sync-error');
@@ -2651,39 +2755,102 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   async function saveSyncSettings(event) {
     event.preventDefault();
     if (!cryptoAvailable()) { showSyncError(syncErrorText(new SyncError('nocrypto'))); return; }
+    const mode = syncFormMode;
+    const passphrase = $('#sync-pass').value;
+    const server = $('#sync-server').value.trim().replace(/\/+$/, '') || SYNC_SERVER_DEFAULT;
     const repo = $('#sync-repo').value.trim().replace(/^https:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
     const token = $('#sync-token').value.trim();
-    const passphrase = $('#sync-pass').value;
     let error = '';
-    if (!REPO_PATTERN.test(repo)) error = 'Bitte das Repository als „besitzer/name“ angeben, z. B. lukasnews/moodtracker-data.';
-    else if (!token || /\s/.test(token)) error = 'Bitte ein gültiges GitHub-Token eingeben (ohne Leerzeichen).';
-    else if (passphrase.length < 8) error = 'Das Sync-Passwort braucht mindestens 8 Zeichen.';
+    if (mode === 'server' && !SERVER_PATTERN.test(server)) error = 'Bitte die Server-Adresse mit https:// angeben, z. B. https://sync.chaoten.online.';
+    else if (mode === 'github' && !REPO_PATTERN.test(repo)) error = 'Bitte das Repository als „besitzer/name“ angeben, z. B. lukasnews/moodtracker-data.';
+    else if (mode === 'github' && (!token || /\s/.test(token))) error = 'Bitte ein gültiges GitHub-Token eingeben (ohne Leerzeichen).';
+    else if (passphrase.length < 8) error = 'Das Paar-Passwort braucht mindestens 8 Zeichen.';
     if (error) { showSyncError(error); return; }
     showSyncError('');
 
     const previous = { ...syncConfig };
-    syncConfig = { repo, token, passphrase, lastSync: previous.repo === repo && previous.passphrase === passphrase ? previous.lastSync : '' };
+    const sameTarget = previous.mode === mode && previous.passphrase === passphrase &&
+      (mode === 'server' ? previous.server === server : previous.repo === repo);
+    syncConfig = {
+      mode, server, passphrase,
+      repo: mode === 'github' ? repo : previous.repo,
+      token: mode === 'github' ? token : previous.token,
+      lastSync: sameTarget ? previous.lastSync : ''
+    };
 
-    // Sicherheitsprüfung: Repository sollte privat sein
-    try {
-      const res = await ghFetch(`${GITHUB_API}/repos/${repo}`);
-      if (!res.ok) throw new SyncError('http', res.status);
-      const info = await res.json();
-      if (info.private !== true) {
-        const goOn = await confirmAction('Repository ist öffentlich',
-          ['Dieses Repository ist öffentlich. Die Daten wären zwar verschlüsselt, aber jeder könnte die verschlüsselte Datei herunterladen.',
-            'Empfehlung: ein privates Repository verwenden.'],
-          'Trotzdem verwenden', { danger: true });
-        if (!goOn) { syncConfig = previous; return; }
+    if (mode === 'github') {
+      // Sicherheitsprüfung: Repository sollte privat sein
+      try {
+        const res = await ghFetch(`${GITHUB_API}/repos/${repo}`);
+        if (!res.ok) throw new SyncError('http', res.status);
+        const info = await res.json();
+        if (info.private !== true) {
+          const goOn = await confirmAction('Repository ist öffentlich',
+            ['Dieses Repository ist öffentlich. Die Daten wären zwar verschlüsselt, aber jeder könnte die verschlüsselte Datei herunterladen.',
+              'Empfehlung: ein privates Repository verwenden.'],
+            'Trotzdem verwenden', { danger: true });
+          if (!goOn) { syncConfig = previous; return; }
+        }
+      } catch (err) {
+        syncConfig = previous;
+        showSyncError(syncErrorText(err instanceof SyncError ? err : new SyncError('unknown')));
+        return;
       }
-    } catch (err) {
-      syncConfig = previous;
-      showSyncError(syncErrorText(err instanceof SyncError ? err : new SyncError('unknown')));
-      return;
     }
     if (!saveSyncConfig()) { syncConfig = previous; showSyncError('Die Einstellungen konnten nicht gespeichert werden.'); return; }
+    keyCache.clear();
     const result = await runSync({ manual: true });
     if (result.ok) toast('Sync eingerichtet ✓');
+    renderSyncSettings();
+  }
+
+  /** Neues Gerät: nur das Paar-Passwort eingeben (Standard-Server). */
+  async function quickConnect() {
+    if (!cryptoAvailable()) { showInfo('Nicht möglich', syncErrorText(new SyncError('nocrypto'))); return; }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const res = await openDialog({
+        title: 'Mit Paar-Passwort verbinden',
+        message: [attempt ? 'Das hat nicht geklappt – bitte das Passwort prüfen.' : 'Gib euer gemeinsames Paar-Passwort ein. Danach sind alle Einträge auf diesem Gerät.'],
+        input: { label: 'Paar-Passwort', type: 'password' },
+        buttons: [{ label: 'Abbrechen', value: 'cancel' }, { label: 'Verbinden', value: 'connect', variant: 'primary' }]
+      });
+      if (res.action !== 'connect') return;
+      if (res.input.length < 8) continue;
+      const previous = { ...syncConfig };
+      syncConfig = { ...emptySyncConfig(), mode: 'server', server: previous.mode === 'server' ? previous.server : SYNC_SERVER_DEFAULT, passphrase: res.input };
+      // Erst prüfen, ob das Passwort passt – ein neuer, leerer Server würde sonst mit diesem Passwort angelegt
+      try {
+        const remote = await serverRead();
+        if (!remote.exists) {
+          const create = await confirmAction('Neuer Sync',
+            'Auf dem Server sind noch keine Daten. Soll dieses Passwort euer Paar-Passwort werden? (Auf allen weiteren Geräten dasselbe Passwort eingeben.)',
+            'Ja, einrichten');
+          if (!create) { syncConfig = previous; return; }
+        } else {
+          await decryptData(remote.envelope); // Passwort passt auch zur Verschlüsselung?
+        }
+      } catch (err) {
+        syncConfig = previous;
+        const error = err instanceof SyncError ? err : new SyncError('unknown');
+        if (error.code === 'auth' || error.code === 'passphrase') continue;
+        showInfo('Verbinden fehlgeschlagen', syncErrorText(error));
+        return;
+      }
+      if (!saveSyncConfig()) { syncConfig = previous; showInfo('Speichern nicht möglich', 'Die Sync-Einstellungen konnten nicht gespeichert werden.'); return; }
+      const result = await runSync({ manual: true });
+      if (result.ok) {
+        renderNames();
+        updateConnectHint();
+        showInfo('Verbunden ✓', 'Dieses Gerät ist jetzt verbunden. Wähle dein Profil, um loszulegen.');
+      }
+      return;
+    }
+    showInfo('Nicht verbunden', 'Das Passwort hat dreimal nicht gepasst. Bitte später noch einmal versuchen.');
+  }
+
+  function updateConnectHint() {
+    const hint = $('#connect-hint');
+    if (hint) hint.hidden = syncReady();
   }
 
   /**
@@ -2702,8 +2869,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     if (newPass === syncConfig.passphrase) { showError('Das neue Passwort ist dasselbe wie das bisherige.'); return; }
     showError('');
     const ok = await confirmAction('Sync-Passwort ändern?',
-      ['Die Daten im Repository werden mit dem neuen Passwort neu verschlüsselt.',
-        'Auf dem anderen Handy klappt der Sync danach erst wieder, wenn dort das neue Passwort eingetragen ist. Bitte das neue Passwort gut merken.'],
+      ['Die gespeicherten Sync-Daten werden mit dem neuen Passwort neu verschlüsselt.',
+        'Auf den anderen Geräten klappt der Sync danach erst wieder, wenn dort das neue Passwort eingetragen ist. Bitte das neue Passwort gut merken.'],
       'Passwort ändern');
     if (!ok) return;
     if (syncRunning) { showError('Gerade läuft ein Abgleich – bitte gleich noch einmal versuchen.'); return; }
@@ -2716,7 +2883,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     try {
       let done = false;
       for (let attempt = 0; attempt < 4 && !done; attempt++) {
-        const remote = await ghRead();
+        const remote = await backendRead();
         let merged = appData;
         if (remote.exists) {
           const normalized = normalizeData(await decryptData(remote.envelope)); // mit altem Passwort
@@ -2725,7 +2892,21 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         }
         // Neues Salt → neuer Schlüssel
         const envelope = await encryptData(merged, '', PBKDF2_ITERATIONS, newPass);
-        const write = await ghWrite(envelope, remote.exists ? remote.sha : '');
+        let write;
+        if (syncConfig.mode === 'server') {
+          if (!remote.exists) { write = await serverWrite(envelope, 0); }
+          else {
+            // Anmelde-Token und Daten in einem Schritt austauschen
+            const res = await serverFetch('/v1/rekey', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ version: remote.ref, newToken: await deriveAuthToken(newPass), data: envelope })
+            });
+            if (res.status !== 409 && !res.ok) throw new SyncError('server', res.status);
+            write = { conflict: res.status === 409 };
+          }
+        } else {
+          write = await ghWrite(envelope, remote.exists ? remote.ref : '');
+        }
         if (write.conflict) continue;
         if (canonical(merged) !== canonical(appData)) {
           appData = merged;
@@ -2744,11 +2925,11 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       $('#sync-pw-repeat').value = '';
       setSyncStatus(describeLastSync(), 'ok');
       showInfo('Passwort geändert', ['Die Daten sind jetzt mit dem neuen Passwort verschlüsselt.',
-        'Auf dem anderen Handy: ⚙️ → Sync → neues Passwort eintragen → „Speichern & synchronisieren“.']);
+        'Auf den anderen Geräten: ⚙️ → Sync → neues Passwort eintragen → „Speichern & synchronisieren“.']);
     } catch (err) {
       const error = err instanceof SyncError ? err : new SyncError('unknown');
       const text = error.code === 'passphrase'
-        ? 'Das bisherige Passwort passt nicht mehr zu den Daten im Repository – vermutlich wurde es auf dem anderen Handy schon geändert. Trag zuerst oben das aktuelle Passwort ein.'
+        ? 'Das bisherige Passwort passt nicht mehr zu den gespeicherten Daten – vermutlich wurde es auf einem anderen Gerät schon geändert. Trag zuerst oben das aktuelle Passwort ein.'
         : syncErrorText(error);
       showError(text);
       setSyncStatus(syncErrorText(error), 'error');
@@ -2837,7 +3018,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
         showInfo('Link ungültig', 'Der Einrichtungs-Link enthält keine gültigen Zugangsdaten.');
         return;
       }
-      syncConfig = { repo: payload.repo, token: payload.token.slice(0, 255), passphrase: res.input, lastSync: '' };
+      syncConfig = { ...emptySyncConfig(), mode: 'github', repo: payload.repo, token: payload.token.slice(0, 255), passphrase: res.input, lastSync: '' };
       if (!saveSyncConfig()) { showInfo('Speichern nicht möglich', 'Die Sync-Einstellungen konnten nicht gespeichert werden.'); return; }
       keyCache.clear();
       const result = await runSync({ manual: true });
@@ -2859,6 +3040,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     syncConfig = emptySyncConfig();
     clearTimeout(syncTimer);
     keyCache.clear();
+    authTokenCache.clear();
     renderSyncSettings();
     toast('Sync entfernt.');
   }
@@ -3965,6 +4147,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
   });
   $('#sync-clear-btn').addEventListener('click', clearSyncSettings);
   $('#sync-pw-form').addEventListener('submit', changeSyncPassword);
+  $('#sync-mode-server').addEventListener('click', () => applySyncFormMode('server'));
+  $('#sync-mode-github').addEventListener('click', () => applySyncFormMode('github'));
+  $('#quick-connect-btn').addEventListener('click', quickConnect);
   $('#sync-share-btn').addEventListener('click', shareConnectLink);
   $('#sync-copy-btn').addEventListener('click', () => copyConnectLink());
   $('#push-test-btn').addEventListener('click', testPush);

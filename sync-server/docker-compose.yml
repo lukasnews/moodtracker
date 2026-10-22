@@ -1,0 +1,20 @@
+services:
+  our-mood-sync:
+    build: .
+    container_name: our-mood-sync
+    restart: unless-stopped
+    environment:
+      # Nur diese Seite darf den Server benutzen (CORS)
+      ALLOWED_ORIGINS: "https://moods.chaoten.online"
+      # 1 = der Server gehört genau einem Paar (das erste Passwort, das sich verbindet)
+      MAX_SPACES: "1"
+      # Hinter Reverse Proxy / Cloudflare die echte Client-IP für die Fehlversuch-Bremse verwenden
+      TRUST_PROXY: "1"
+    volumes:
+      - our-mood-data:/data
+    ports:
+      # Port auf dem Pi, auf den euer Reverse Proxy / Tunnel zeigt
+      - "8087:8080"
+
+volumes:
+  our-mood-data:
