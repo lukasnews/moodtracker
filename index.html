@@ -6,8 +6,8 @@
 <!-- Privatsphäre: keine Suchmaschinen-Indexierung, keine Referrer-Weitergabe -->
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<!-- Sicherheitsrichtlinie: Die Seite darf keinerlei Netzwerkverbindungen aufbauen (connect-src 'none') -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<!-- Sicherheitsrichtlinie: Netzwerkverbindungen sind NUR zum eigenen ntfy-Server erlaubt (für das optionale Lust-Signal per Push) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://ntfy.chaoten.online; font-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="theme-color" content="#f6f1e9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1f1c1a" media="(prefers-color-scheme: dark)">
 <title>Our Mood</title>
@@ -816,7 +816,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       <details class="privacy-details">
       <summary>Datenschutzhinweise anzeigen</summary>
       <ul class="privacy-list">
-        <li>Alle Angaben bleiben ausschließlich in diesem Browser auf diesem Gerät. Es werden keine Daten an Server gesendet – kein Konto, keine Analyse, kein Tracking, keine Werbung.</li>
+        <li>Alle Angaben bleiben ausschließlich in diesem Browser auf diesem Gerät – kein Konto, keine Analyse, kein Tracking, keine Werbung.</li>
+        <li>Einzige Ausnahme: Wenn du „Push (ntfy)“ einrichtest, wird beim Lust-Signal eine kurze Nachricht an euren eigenen Server <strong>ntfy.chaoten.online</strong> gesendet. Einträge, Antworten und die Wunschliste werden nie übertragen.</li>
         <li><strong>Wenn Browserdaten gelöscht werden</strong> (z.&nbsp;B. „Verlauf/Websitedaten löschen“, privater Modus, Speicherbereinigung des Systems), <strong>können die Einträge unwiederbringlich verloren gehen.</strong> Erstelle deshalb regelmäßig eine Sicherung.</li>
         <li>Andere Geräte oder andere Browser sehen diese Daten nicht. Zum Übertragen nutze Export und Import.</li>
         <li>GitHub Pages stellt nur die App bereit und schützt keine privaten Daten. Jede Person mit Zugriff auf dieses entsperrte Gerät und diesen Browser könnte die gespeicherten Einträge sehen.</li>
@@ -845,6 +846,35 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
           <button type="submit" class="btn btn-primary">Namen speichern</button>
         </div>
       </form>
+    </div>
+
+    <div class="card settings-card">
+      <h2>Push (ntfy)</h2>
+      <p class="muted">Sendet das Lust-Signal als Push-Benachrichtigung aufs Handy der anderen Person – über euren Server <strong>ntfy.chaoten.online</strong>. Die andere Person abonniert dafür in der ntfy-App ihr Topic.</p>
+      <form id="push-form" novalidate autocomplete="off">
+        <label class="field-label" for="push-token">Zugangstoken</label>
+        <input id="push-token" class="input" type="password" maxlength="200" autocomplete="off" spellcheck="false" placeholder="tk_…">
+        <div class="name-grid">
+          <div>
+            <label class="field-label" for="push-topic-A">Topic von <span data-name="A">Person A</span></label>
+            <input id="push-topic-A" class="input" type="text" maxlength="64" autocomplete="off" spellcheck="false" autocapitalize="off">
+          </div>
+          <div>
+            <label class="field-label" for="push-topic-B">Topic von <span data-name="B">Person B</span></label>
+            <input id="push-topic-B" class="input" type="text" maxlength="64" autocomplete="off" spellcheck="false" autocapitalize="off">
+          </div>
+        </div>
+        <p class="muted small" style="margin:.6rem 0 0">Sendet <span data-name="A">Person A</span> ein Signal, geht der Push an das Topic von <span data-name="B">Person B</span> – und umgekehrt.</p>
+        <p class="field-error" id="push-error" role="alert" hidden></p>
+        <div class="btn-row" style="margin-top:1rem">
+          <button type="submit" class="btn btn-primary">Push speichern</button>
+          <button type="button" class="btn" id="push-test-btn">Test senden</button>
+          <button type="button" class="btn-link" id="push-clear-btn">Push entfernen</button>
+        </div>
+      </form>
+      <div class="notice" style="margin:1rem 0 0">
+        <p>Das Token wird nur in diesem Browser gespeichert – nicht im Backup-Export und nicht im (öffentlichen) GitHub-Code. Tipp: Ein Token, das nur in diese beiden Topics schreiben darf.</p>
+      </div>
     </div>
 
     <div class="card settings-card">
@@ -1923,6 +1953,140 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#signal-btn').textContent = own ? 'Signal zurücknehmen' : '✨ Ich hätte heute Lust';
   }
 
+  /* ==========================================================
+     Push über den eigenen ntfy-Server
+     Konfiguration liegt unter einem eigenen Schlüssel, damit das Token nie im Export landet.
+     ========================================================== */
+  const NTFY_URL = 'https://ntfy.chaoten.online';
+  const PUSH_KEY = 'ourMood.push.v1';
+  const TOPIC_PATTERN = /^[-_A-Za-z0-9]{1,64}$/;
+
+  function loadPushConfig() {
+    try {
+      const raw = JSON.parse(window.localStorage.getItem(PUSH_KEY) || 'null');
+      if (!raw || typeof raw !== 'object') return { token: '', topics: { A: '', B: '' } };
+      const topic = v => (typeof v === 'string' && TOPIC_PATTERN.test(v) ? v : '');
+      return {
+        token: typeof raw.token === 'string' ? raw.token.trim().slice(0, 200) : '',
+        topics: { A: topic(raw.topics && raw.topics.A), B: topic(raw.topics && raw.topics.B) }
+      };
+    } catch (err) {
+      return { token: '', topics: { A: '', B: '' } };
+    }
+  }
+  let pushConfig = loadPushConfig();
+  const pushReadyFor = profile => !!(pushConfig.token && pushConfig.topics[profile]);
+
+  /** Verständliche Fehlermeldung je HTTP-Status. */
+  function pushErrorText(status) {
+    if (status === 401) return 'Token ungültig (401). Bitte das Zugangstoken prüfen.';
+    if (status === 403) return 'Keine Schreibrechte für dieses Topic (403). Bitte die Rechte des Tokens prüfen.';
+    if (status === 400) return 'Der Server hat die Nachricht abgelehnt (400 – Format).';
+    if (status === 429) return 'Zu viele Nachrichten (429). Bitte später erneut versuchen.';
+    if (status === 0) return 'Server nicht erreichbar. Bitte Internetverbindung prüfen.';
+    return `Senden fehlgeschlagen (HTTP ${status}).`;
+  }
+
+  /** base64url ohne Padding – für ntfys ?auth=-Parameter (Fallback, falls der Header per CORS blockiert wird). */
+  function base64Url(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    bytes.forEach(b => { binary += String.fromCharCode(b); });
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  /**
+   * Sendet eine Nachricht im JSON-Format an den ntfy-Server.
+   * Rückgabe: { ok: true } oder { ok: false, status } (status 0 = Netzwerk-/CORS-Fehler).
+   */
+  async function sendPush(topic, title, message, tags) {
+    const payload = { topic, title, message, priority: 3, tags };
+    if (/^https:/.test(window.location.href)) payload.click = window.location.origin + window.location.pathname;
+    const body = JSON.stringify(payload);
+    try {
+      const res = await fetch(NTFY_URL, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + pushConfig.token, 'Content-Type': 'application/json' },
+        body, cache: 'no-store', referrerPolicy: 'no-referrer', credentials: 'omit'
+      });
+      return res.ok ? { ok: true } : { ok: false, status: res.status };
+    } catch (err) {
+      // Netzwerkfehler oder CORS-Vorabprüfung blockiert → einfacher Request mit ?auth=
+      try {
+        const res = await fetch(`${NTFY_URL}/?auth=${base64Url('Bearer ' + pushConfig.token)}`, {
+          method: 'POST', body, cache: 'no-store', referrerPolicy: 'no-referrer', credentials: 'omit'
+        });
+        return res.ok ? { ok: true } : { ok: false, status: res.status };
+      } catch (err2) {
+        return { ok: false, status: 0 };
+      }
+    }
+  }
+
+  function renderPushSettings() {
+    $('#push-token').value = pushConfig.token;
+    $('#push-topic-A').value = pushConfig.topics.A;
+    $('#push-topic-B').value = pushConfig.topics.B;
+    $('#push-error').hidden = true;
+  }
+
+  function readPushForm() {
+    const token = $('#push-token').value.trim();
+    const topics = { A: $('#push-topic-A').value.trim(), B: $('#push-topic-B').value.trim() };
+    let error = '';
+    if (!token) error = 'Bitte gib das Zugangstoken ein.';
+    else if (/\s/.test(token)) error = 'Das Token darf keine Leerzeichen enthalten.';
+    else if (!topics.A && !topics.B) error = 'Bitte gib mindestens ein Topic ein.';
+    else if ((topics.A && !TOPIC_PATTERN.test(topics.A)) || (topics.B && !TOPIC_PATTERN.test(topics.B))) error = 'Topics dürfen nur Buchstaben, Zahlen, - und _ enthalten (max. 64 Zeichen).';
+    return { error, config: { token, topics } };
+  }
+
+  function showPushError(text) {
+    const node = $('#push-error');
+    node.textContent = text;
+    node.hidden = !text;
+  }
+
+  function savePushConfig(event) {
+    if (event) event.preventDefault();
+    const { error, config } = readPushForm();
+    if (error) { showPushError(error); return false; }
+    try { window.localStorage.setItem(PUSH_KEY, JSON.stringify(config)); } catch (err) {
+      showPushError('Die Einstellungen konnten nicht gespeichert werden.');
+      return false;
+    }
+    pushConfig = config;
+    showPushError('');
+    toast('Push-Einstellungen gespeichert.');
+    return true;
+  }
+
+  async function testPush() {
+    if (!savePushConfig()) return;
+    const btn = $('#push-test-btn');
+    btn.disabled = true;
+    try {
+      const targets = PROFILES.filter(p => pushConfig.topics[p]);
+      const results = [];
+      for (const p of targets) {
+        const r = await sendPush(pushConfig.topics[p], 'Our Mood', `Test – Push für ${nameOf(p)} funktioniert.`, ['white_check_mark']);
+        results.push(r.ok ? `${nameOf(p)}: angekommen beim Server ✓` : `${nameOf(p)}: ${pushErrorText(r.status)}`);
+      }
+      showInfo('Test-Nachricht', results);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function clearPushConfig() {
+    const ok = await confirmAction('Push entfernen?', 'Token und Topics werden aus diesem Browser gelöscht. Lust-Signale werden dann nur noch in der App angezeigt.', 'Entfernen', { danger: true });
+    if (!ok) return;
+    try { window.localStorage.removeItem(PUSH_KEY); } catch (err) { /* ignorieren */ }
+    pushConfig = { token: '', topics: { A: '', B: '' } };
+    renderPushSettings();
+    toast('Push entfernt.');
+  }
+
   async function toggleSignal() {
     if (!activeProfile) return;
     const profile = activeProfile;
@@ -1932,7 +2096,12 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     } else {
       const res = await openDialog({
         title: 'Lust-Signal senden',
-        message: [`${nameOf(otherProfile(profile))} sieht heute beim Öffnen des eigenen Profils, dass du Lust hättest. Unverbindlich – es ist eine Einladung, keine Erwartung. Um Mitternacht verschwindet das Signal.`],
+        message: [
+          pushReadyFor(otherProfile(profile))
+            ? `${nameOf(otherProfile(profile))} bekommt eine Push-Benachrichtigung aufs Handy und sieht das Signal auch hier beim Öffnen des eigenen Profils.`
+            : `${nameOf(otherProfile(profile))} sieht heute beim Öffnen des eigenen Profils, dass du Lust hättest. (Für eine Benachrichtigung aufs andere Handy: Einstellungen → Push.)`,
+          'Unverbindlich – es ist eine Einladung, keine Erwartung. Um Mitternacht verschwindet das Signal.'
+        ],
         input: { label: 'Kurze Nachricht (optional)' },
         buttons: [
           { label: 'Abbrechen', value: 'cancel' },
@@ -1948,7 +2117,19 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       return;
     }
     renderSignals();
-    toast(appData.signals[profile] ? 'Lust-Signal gesendet ✨' : 'Signal zurückgenommen.');
+    const sig = appData.signals[profile];
+    const partner = otherProfile(profile);
+    if (!sig) { toast('Signal zurückgenommen.'); return; }
+    if (!pushReadyFor(partner)) { toast('Lust-Signal gesetzt ✨'); return; }
+    toast('Lust-Signal wird gesendet …');
+    const result = await sendPush(
+      pushConfig.topics[partner],
+      `✨ ${nameOf(profile)} hätte heute Lust`,
+      sig.note || 'Unverbindlich – nur ein kleines Signal.',
+      ['sparkles']
+    );
+    if (result.ok) toast(`Push an ${nameOf(partner)} gesendet ✨`);
+    else showInfo('Push nicht gesendet', [`Das Signal ist in der App gesetzt, aber die Benachrichtigung konnte nicht gesendet werden.`, pushErrorText(result.status)]);
   }
 
   /* ==========================================================
@@ -2717,6 +2898,7 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
     $('#name-b').value = nameOf('B');
     $('#names-error').hidden = true;
     for (const p of PROFILES) $(`#cycle-setting-${p}`).checked = !!appData.settings.cycle[p];
+    renderPushSettings();
     const n = appData.entries.length;
     $('#storage-summary').textContent = storageAvailable
       ? `Aktuell gespeichert: ${n === 1 ? '1 Eintrag' : n + ' Einträge'}.`
@@ -2875,7 +3057,8 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
       showInfo('Nicht gelöscht', 'Die Bestätigung stimmte nicht. Es wurde nichts gelöscht.');
       return;
     }
-    try { window.localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignorieren */ }
+    try { window.localStorage.removeItem(STORAGE_KEY); window.localStorage.removeItem(PUSH_KEY); } catch (e) { /* ignorieren */ }
+    pushConfig = { token: '', topics: { A: '', B: '' } };
     appData = defaultData();
     activeProfile = null;
     sharedViewOpen = false;
@@ -2944,6 +3127,9 @@ footer.app-footer { text-align: center; color: var(--text-muted); font-size: .85
 
   $('#names-form').addEventListener('submit', handleNamesSubmit);
   $('#signal-btn').addEventListener('click', toggleSignal);
+  $('#push-form').addEventListener('submit', savePushConfig);
+  $('#push-test-btn').addEventListener('click', testPush);
+  $('#push-clear-btn').addEventListener('click', clearPushConfig);
   $('#wish-form').addEventListener('submit', addWish);
   $$('[data-cycle-profile]').forEach(box => box.addEventListener('change', () => {
     const p = box.dataset.cycleProfile;

@@ -2,7 +2,7 @@
 
 *Ein Moment für uns – ohne Druck, ohne Erwartungen.*
 
-Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimmung, Nähe und Intimität festhalten könnt. Die App läuft komplett im Browser: ohne Server, ohne Konto, ohne Tracking.
+Ein privater Moodtracker für Paare, mit dem ihr an einem vereinbarten Tag Stimmung, Nähe und Intimität festhalten könnt. Die App läuft komplett im Browser: ohne Konto, ohne Tracking. Einzige optionale Verbindung ist der Push für das Lust-Signal an euren eigenen ntfy-Server.
 
 ## Dateien
 
@@ -59,8 +59,22 @@ Die Datei `CNAME` im Repository enthält die Domain `moods.chaoten.online`. Dami
 
 Hinweis: Gespeicherte Einträge gehören immer zu genau einer Adresse. Einträge, die unter `…github.io/…` gespeichert wurden, sind unter `moods.chaoten.online` nicht sichtbar. Übertragen lassen sie sich über Export und Import.
 
+## Lust-Signal als Push aufs andere Handy (ntfy)
+
+Die App kann das Lust-Signal über euren eigenen ntfy-Server **ntfy.chaoten.online** als Push-Benachrichtigung senden. Einträge, Antworten und die Wunschliste werden dabei nie übertragen, sondern nur Titel und die optionale Kurznachricht des Signals.
+
+**Einrichtung (einmalig):**
+1. **Auf dem Server:** Je Person ein Topic festlegen, z. B. `moods-lena` und `moods-tom`. Am besten schwer zu erratende Namen verwenden. Dann ein Zugangstoken erstellen, das in beide Topics **schreiben** darf, z. B. `ntfy token add <user>` und `ntfy access <user> moods-* write-only`.
+2. **ntfy-App auf beiden Handys:** Server `https://ntfy.chaoten.online` hinzufügen, mit einem Benutzer anmelden, der **lesen** darf, und das **eigene** Topic abonnieren.
+3. **In Our Mood auf jedem Handy:** ⚙️ Einstellungen → **Push (ntfy)** öffnen, Token und beide Topics eintragen und **Test senden** tippen.
+4. Sendet jetzt jemand „✨ Ich hätte heute Lust“, bekommt die andere Person eine Benachrichtigung. Ein Tipp darauf öffnet die App.
+
+**Sicherheit:** Das Token wird nur im Browser des jeweiligen Geräts gespeichert, nicht im Backup und nicht im GitHub-Code. Das Repository ist öffentlich, also das Token nie in `index.html` eintragen. Die Content-Security-Policy erlaubt Verbindungen ausschließlich zu `https://ntfy.chaoten.online`.
+
+**Fehlermeldungen:** 401 = Token falsch, 403 = keine Schreibrechte fürs Topic, 400 = Nachrichtenformat abgelehnt.
+
 ## Datenschutz & Sicherheit
 
-- Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy (`connect-src 'none'`) verhindert, dass die Seite Netzwerkverbindungen aufbaut.
+- Keine externen Skripte, Schriften oder Dienste. Eine Content-Security-Policy erlaubt Netzwerkverbindungen nur zum eigenen ntfy-Server (`connect-src https://ntfy.chaoten.online`), und das auch nur für das optionale Push-Signal.
 - Nutzereingaben werden nur als Text (`textContent`) angezeigt, nie als HTML. `eval` wird nicht verwendet.
 - Importierte Dateien werden nur mit `JSON.parse` gelesen und feldweise geprüft. Unbekannte Felder und ungültige Einträge werden verworfen.
